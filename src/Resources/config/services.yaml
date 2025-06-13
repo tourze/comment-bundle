@@ -4,5 +4,18 @@ services:
     autowire: true      # Automatically injects dependencies in your services.
     autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
-#  Tourze\CommentBundle\Repository\:
-#    resource: '../../Repository/'
+  # Repository services
+  Tourze\CommentBundle\Repository\:
+    resource: '../../Repository/'
+
+  # Service layer
+  Tourze\CommentBundle\Service\:
+    resource: '../../Service/'
+
+  # Event listeners
+  Tourze\CommentBundle\EventListener\:
+    resource: '../../EventListener/'
+
+  # Commands
+  Tourze\CommentBundle\Command\:
+    resource: '../../Command/'
