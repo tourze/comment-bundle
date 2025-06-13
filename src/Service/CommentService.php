@@ -6,6 +6,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Tourze\CommentBundle\Entity\Comment;
 use Tourze\CommentBundle\Entity\CommentMention;
+use Tourze\CommentBundle\Enum\CommentStatus;
 use Tourze\CommentBundle\Event\CommentApprovedEvent;
 use Tourze\CommentBundle\Event\CommentCreatedEvent;
 use Tourze\CommentBundle\Event\CommentDeletedEvent;
@@ -61,9 +62,9 @@ class CommentService
 
         // 自动审核内容
         if ($this->contentFilter->isContentSafe($comment->getContent())) {
-            $comment->setStatus('approved');
+            $comment->setStatus(CommentStatus::APPROVED);
         } else {
-            $comment->setStatus('pending');
+            $comment->setStatus(CommentStatus::PENDING);
         }
 
         $this->entityManager->persist($comment);
@@ -109,13 +110,13 @@ class CommentService
 
         if (isset($data['content'])) {
             $comment->setContent($data['content']);
-            $comment->setUpdatedAt(new \DateTimeImmutable());
+            $comment->setUpdateTime(new \DateTime());
 
             // 重新审核内容
             if ($this->contentFilter->isContentSafe($comment->getContent())) {
-                $comment->setStatus('approved');
+                $comment->setStatus(CommentStatus::APPROVED);
             } else {
-                $comment->setStatus('pending');
+                $comment->setStatus(CommentStatus::PENDING);
             }
         }
 
@@ -138,8 +139,8 @@ class CommentService
     public function deleteComment(Comment $comment, bool $softDelete = true): void
     {
         if ($softDelete) {
-            $comment->setDeletedAt(new \DateTimeImmutable());
-            $comment->setStatus('deleted');
+            $comment->setDeleteTime(new \DateTime());
+            $comment->setStatus(CommentStatus::DELETED);
             $this->entityManager->flush();
         } else {
             $this->entityManager->remove($comment);
@@ -155,7 +156,7 @@ class CommentService
 
     public function approveComment(Comment $comment): Comment
     {
-        $comment->setStatus('approved');
+        $comment->setStatus(CommentStatus::APPROVED);
         $this->entityManager->flush();
 
         // 触发事件
@@ -169,7 +170,7 @@ class CommentService
 
     public function rejectComment(Comment $comment): Comment
     {
-        $comment->setStatus('rejected');
+        $comment->setStatus(CommentStatus::REJECTED);
         $this->entityManager->flush();
 
         return $comment;

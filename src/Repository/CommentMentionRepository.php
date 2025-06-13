@@ -19,7 +19,7 @@ class CommentMentionRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('m')
             ->where('m.comment = :comment')
             ->setParameter('comment', $comment)
-            ->orderBy('m.createdAt', 'ASC')
+            ->orderBy('m.createTime', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -36,7 +36,7 @@ class CommentMentionRepository extends ServiceEntityRepository
         }
 
         $orderDirection = $options['order_direction'] ?? 'DESC';
-        $qb->orderBy('m.createdAt', $orderDirection);
+        $qb->orderBy('m.createTime', $orderDirection);
 
         if ($limit = $options['limit'] ?? null) {
             $qb->setMaxResults($limit);
@@ -48,9 +48,9 @@ class CommentMentionRepository extends ServiceEntityRepository
     public function findUnnotifiedMentions(int $limit = 100): array
     {
         return $this->createQueryBuilder('m')
-            ->where('m.isNotified = :isNotified')
+            ->where('m.notified = :isNotified')
             ->setParameter('isNotified', false)
-            ->orderBy('m.createdAt', 'ASC')
+            ->orderBy('m.createTime', 'ASC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
@@ -61,7 +61,7 @@ class CommentMentionRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('m')
             ->select('COUNT(m.id)')
             ->where('m.mentionedUserId = :userId')
-            ->andWhere('m.isNotified = :isNotified')
+            ->andWhere('m.notified = :isNotified')
             ->setParameter('userId', $userId)
             ->setParameter('isNotified', false)
             ->getQuery()
@@ -76,11 +76,11 @@ class CommentMentionRepository extends ServiceEntityRepository
 
         return $this->createQueryBuilder('m')
             ->update()
-            ->set('m.isNotified', ':isNotified')
-            ->set('m.notifiedAt', ':notifiedAt')
+            ->set('m.notified', ':isNotified')
+            ->set('m.notifyTime', ':notifyTime')
             ->where('m.id IN (:ids)')
             ->setParameter('isNotified', true)
-            ->setParameter('notifiedAt', new \DateTimeImmutable())
+            ->setParameter('notifyTime', new \DateTime())
             ->setParameter('ids', $mentionIds)
             ->getQuery()
             ->execute();
@@ -112,8 +112,8 @@ class CommentMentionRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('m')
             ->select([
                 'COUNT(m.id) as total_mentions',
-                'COUNT(CASE WHEN m.isNotified = true THEN 1 END) as notified_mentions',
-                'COUNT(CASE WHEN m.isNotified = false THEN 1 END) as pending_mentions'
+                'COUNT(CASE WHEN m.notified = true THEN 1 END) as notified_mentions',
+                'COUNT(CASE WHEN m.notified = false THEN 1 END) as pending_mentions'
             ])
             ->getQuery()
             ->getSingleResult();
