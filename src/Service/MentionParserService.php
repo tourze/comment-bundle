@@ -10,7 +10,7 @@ class MentionParserService
     ) {
     }
 
-    public function replaceMentionsWithLinks(string $content, callable $linkGenerator = null): string
+    public function replaceMentionsWithLinks(string $content, ?callable $linkGenerator = null): string
     {
         if ($linkGenerator === null) {
             $linkGenerator = function (string $username): string {

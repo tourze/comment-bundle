@@ -47,6 +47,7 @@ class CommentVote implements \Stringable
 
     public function __construct()
     {
+        $this->createTime = new \DateTime();
     }
 
     public function getComment(): Comment

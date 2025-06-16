@@ -7,6 +7,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Tourze\CommentBundle\Entity\Comment;
+use Tourze\CommentBundle\Enum\CommentStatus;
 use Tourze\CommentBundle\Event\CommentApprovedEvent;
 use Tourze\CommentBundle\Event\CommentCreatedEvent;
 use Tourze\CommentBundle\Event\CommentDeletedEvent;
@@ -108,7 +109,7 @@ class CommentServiceTest extends TestCase
 
         $comment = $this->commentService->createComment($data);
 
-        $this->assertEquals('pending', $comment->getStatus());
+        $this->assertEquals(CommentStatus::PENDING, $comment->getStatus());
     }
 
     public function test_createComment_withParent(): void
@@ -187,7 +188,7 @@ class CommentServiceTest extends TestCase
         $updatedComment = $this->commentService->updateComment($comment, $updateData);
 
         $this->assertEquals($updateData['content'], $updatedComment->getContent());
-        $this->assertNotNull($updatedComment->getUpdatedAt());
+        $this->assertNotNull($updatedComment->getUpdateTime());
     }
 
     public function test_deleteComment_softDelete(): void
@@ -206,8 +207,8 @@ class CommentServiceTest extends TestCase
 
         $this->commentService->deleteComment($comment, true);
 
-        $this->assertNotNull($comment->getDeletedAt());
-        $this->assertEquals('deleted', $comment->getStatus());
+        $this->assertNotNull($comment->getDeleteTime());
+        $this->assertEquals(CommentStatus::DELETED, $comment->getStatus());
     }
 
     public function test_deleteComment_hardDelete(): void
@@ -234,7 +235,7 @@ class CommentServiceTest extends TestCase
     public function test_approveComment_changesStatus(): void
     {
         $comment = new Comment();
-        $comment->setStatus('pending');
+        $comment->setStatus(CommentStatus::PENDING);
 
         $this->entityManager->expects($this->once())
             ->method('flush');
@@ -248,26 +249,26 @@ class CommentServiceTest extends TestCase
 
         $approvedComment = $this->commentService->approveComment($comment);
 
-        $this->assertEquals('approved', $approvedComment->getStatus());
+        $this->assertEquals(CommentStatus::APPROVED, $approvedComment->getStatus());
     }
 
     public function test_rejectComment_changesStatus(): void
     {
         $comment = new Comment();
-        $comment->setStatus('pending');
+        $comment->setStatus(CommentStatus::PENDING);
 
         $this->entityManager->expects($this->once())
             ->method('flush');
 
         $rejectedComment = $this->commentService->rejectComment($comment);
 
-        $this->assertEquals('rejected', $rejectedComment->getStatus());
+        $this->assertEquals(CommentStatus::REJECTED, $rejectedComment->getStatus());
     }
 
     public function test_pinComment_setPinStatus(): void
     {
         $comment = new Comment();
-        $comment->setIsPinned(false);
+        $comment->setPinned(false);
 
         $this->entityManager->expects($this->once())
             ->method('flush');
@@ -280,7 +281,7 @@ class CommentServiceTest extends TestCase
     public function test_unpinComment_removePinStatus(): void
     {
         $comment = new Comment();
-        $comment->setIsPinned(true);
+        $comment->setPinned(true);
 
         $this->entityManager->expects($this->once())
             ->method('flush');

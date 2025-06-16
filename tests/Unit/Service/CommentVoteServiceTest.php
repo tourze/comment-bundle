@@ -8,6 +8,8 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Tourze\CommentBundle\Entity\Comment;
 use Tourze\CommentBundle\Entity\CommentVote;
+use Tourze\CommentBundle\Enum\CommentStatus;
+use Tourze\CommentBundle\Enum\VoteType;
 use Tourze\CommentBundle\Event\CommentVotedEvent;
 use Tourze\CommentBundle\Repository\CommentVoteRepository;
 use Tourze\CommentBundle\Service\CommentVoteService;
@@ -22,9 +24,9 @@ class CommentVoteServiceTest extends TestCase
     public function test_vote_createsNewVote(): void
     {
         $comment = new Comment();
-        $comment->setStatus('approved');
+        $comment->setStatus(CommentStatus::APPROVED);
 
-        $voteType = CommentVote::VOTE_LIKE;
+        $voteType = VoteType::LIKE;
         $voterId = 'user123';
         $voterIp = '127.0.0.1';
 
@@ -56,15 +58,15 @@ class CommentVoteServiceTest extends TestCase
     public function test_vote_removesExistingVoteOfSameType(): void
     {
         $comment = new Comment();
-        $comment->setStatus('approved');
+        $comment->setStatus(CommentStatus::APPROVED);
         $comment->setLikesCount(1);
 
-        $voteType = CommentVote::VOTE_LIKE;
+        $voteType = VoteType::LIKE;
         $voterId = 'user123';
         $voterIp = '127.0.0.1';
 
         $existingVote = new CommentVote();
-        $existingVote->setVoteType(CommentVote::VOTE_LIKE);
+        $existingVote->setVoteType(VoteType::LIKE);
         $existingVote->setComment($comment);
 
         $this->voteRepository->expects($this->exactly(2))
@@ -95,16 +97,16 @@ class CommentVoteServiceTest extends TestCase
     public function test_vote_updatesExistingVoteOfDifferentType(): void
     {
         $comment = new Comment();
-        $comment->setStatus('approved');
+        $comment->setStatus(CommentStatus::APPROVED);
         $comment->setLikesCount(1);
         $comment->setDislikesCount(0);
 
-        $voteType = CommentVote::VOTE_DISLIKE;
+        $voteType = VoteType::DISLIKE;
         $voterId = 'user123';
         $voterIp = '127.0.0.1';
 
         $existingVote = new CommentVote();
-        $existingVote->setVoteType(CommentVote::VOTE_LIKE);
+        $existingVote->setVoteType(VoteType::LIKE);
         $existingVote->setComment($comment);
         $existingVote->setVoterId($voterId);
 
@@ -128,14 +130,13 @@ class CommentVoteServiceTest extends TestCase
         $this->assertTrue($result);
         $this->assertEquals(0, $comment->getLikesCount());
         $this->assertEquals(1, $comment->getDislikesCount());
-        $this->assertEquals(CommentVote::VOTE_DISLIKE, $existingVote->getVoteType());
+        $this->assertEquals(VoteType::DISLIKE, $existingVote->getVoteType());
     }
 
     public function test_vote_throwsExceptionForInvalidVoteType(): void
     {
         $comment = new Comment();
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid vote type');
+        $this->expectException(\TypeError::class);
 
         $this->voteService->vote($comment, 'invalid_type', 'user123');
     }
@@ -149,7 +150,7 @@ class CommentVoteServiceTest extends TestCase
         $voterIp = '127.0.0.1';
 
         $vote = new CommentVote();
-        $vote->setVoteType(CommentVote::VOTE_LIKE);
+        $vote->setVoteType(VoteType::LIKE);
         $vote->setComment($comment);
 
         $this->voteRepository->expects($this->once())
@@ -217,12 +218,12 @@ class CommentVoteServiceTest extends TestCase
         $comment = new Comment();
         $voterId = 'user123';
         $voterIp = '127.0.0.1';
-        $expectedVoteType = CommentVote::VOTE_LIKE;
+        $expectedVoteType = VoteType::LIKE;
 
         $this->voteRepository->expects($this->once())
             ->method('getVoteType')
             ->with($comment, $voterId, $voterIp)
-            ->willReturn($expectedVoteType);
+            ->willReturn('like');
 
         $result = $this->voteService->getVoteType($comment, $voterId, $voterIp);
 
@@ -264,7 +265,7 @@ class CommentVoteServiceTest extends TestCase
     public function test_canVote_withApprovedComment(): void
     {
         $comment = new Comment();
-        $comment->setStatus('approved');
+        $comment->setStatus(CommentStatus::APPROVED);
 
         $this->assertTrue($this->voteService->canVote($comment, 'user123', '127.0.0.1'));
     }
@@ -272,7 +273,7 @@ class CommentVoteServiceTest extends TestCase
     public function test_canVote_withPendingComment(): void
     {
         $comment = new Comment();
-        $comment->setStatus('pending');
+        $comment->setStatus(CommentStatus::PENDING);
 
         $this->assertFalse($this->voteService->canVote($comment, 'user123', '127.0.0.1'));
     }
@@ -280,8 +281,8 @@ class CommentVoteServiceTest extends TestCase
     public function test_canVote_withDeletedComment(): void
     {
         $comment = new Comment();
-        $comment->setStatus('approved');
-        $comment->setDeletedAt(new \DateTimeImmutable());
+        $comment->setStatus(CommentStatus::APPROVED);
+        $comment->setDeleteTime(new \DateTime());
 
         $this->assertFalse($this->voteService->canVote($comment, 'user123', '127.0.0.1'));
     }
@@ -289,7 +290,7 @@ class CommentVoteServiceTest extends TestCase
     public function test_canVote_withNoVoterIdentification(): void
     {
         $comment = new Comment();
-        $comment->setStatus('approved');
+        $comment->setStatus(CommentStatus::APPROVED);
 
         $this->assertFalse($this->voteService->canVote($comment, null, null));
     }
@@ -328,12 +329,12 @@ class CommentVoteServiceTest extends TestCase
         $this->entityManager->method('flush');
 
         // 创建点赞
-        $this->voteService->vote($comment, CommentVote::VOTE_LIKE, 'user123');
+        $this->voteService->vote($comment, VoteType::LIKE, 'user123');
         $this->assertEquals(1, $comment->getLikesCount());
 
         // 模拟一个已存在的点赞投票被删除
         $existingVote = new CommentVote();
-        $existingVote->setVoteType(CommentVote::VOTE_LIKE);
+        $existingVote->setVoteType(VoteType::LIKE);
         $existingVote->setComment($comment);
 
         $this->voteRepository->method('findByCommentAndVoter')->willReturn($existingVote);

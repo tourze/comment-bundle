@@ -145,12 +145,12 @@ class NotificationServiceTest extends TestCase
         $mention1 = new CommentMention();
         $mention1->setComment($comment);
         $mention1->setMentionedUserId('mentioned_user1');
-        $mention1->setIsNotified(false);
+        $mention1->setNotified(false);
 
         $mention2 = new CommentMention();
         $mention2->setComment($comment);
         $mention2->setMentionedUserId('mentioned_user2');
-        $mention2->setIsNotified(true); // 已通知
+        $mention2->setNotified(true); // 已通知
 
         $mentions = [$mention1, $mention2];
 

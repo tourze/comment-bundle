@@ -50,7 +50,7 @@ class CommentVoteRepository extends ServiceEntityRepository
         ];
     }
 
-    public function findVotesByVoter(string $voterId = null, string $voterIp = null, array $options = []): array
+    public function findVotesByVoter(?string $voterId = null, ?string $voterIp = null, array $options = []): array
     {
         $qb = $this->createQueryBuilder('v');
 
@@ -120,6 +120,6 @@ class CommentVoteRepository extends ServiceEntityRepository
     public function getVoteType(Comment $comment, ?string $voterId = null, ?string $voterIp = null): ?string
     {
         $vote = $this->findByCommentAndVoter($comment, $voterId, $voterIp);
-        return $vote?->getVoteType();
+        return $vote?->getVoteType()->value;
     }
 }

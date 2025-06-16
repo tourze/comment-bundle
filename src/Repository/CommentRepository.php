@@ -170,7 +170,7 @@ class CommentRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    public function findByIpAddress(string $ipAddress, \DateTimeInterface $since = null): array
+    public function findByIpAddress(string $ipAddress, ?\DateTimeInterface $since = null): array
     {
         $qb = $this->createQueryBuilder('c')
             ->where('c.authorIp = :ip')
@@ -185,7 +185,7 @@ class CommentRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    public function getCommentStatistics(string $targetType = null, string $targetId = null): array
+    public function getCommentStatistics(?string $targetType = null, ?string $targetId = null): array
     {
         $qb = $this->createQueryBuilder('c')
             ->select([
@@ -237,7 +237,7 @@ class CommentRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    private function addTargetFilter(QueryBuilder $qb, string $targetType = null, string $targetId = null): QueryBuilder
+    private function addTargetFilter(QueryBuilder $qb, ?string $targetType = null, ?string $targetId = null): QueryBuilder
     {
         if ($targetType !== null) {
             $qb->andWhere('c.targetType = :targetType')

@@ -110,7 +110,7 @@ class CommentService
 
         if (isset($data['content'])) {
             $comment->setContent($data['content']);
-            $comment->setUpdateTime(new \DateTime());
+            $comment->setUpdateTime(new \DateTimeImmutable());
 
             // 重新审核内容
             if ($this->contentFilter->isContentSafe($comment->getContent())) {
@@ -178,7 +178,7 @@ class CommentService
 
     public function pinComment(Comment $comment): Comment
     {
-        $comment->setIsPinned(true);
+        $comment->setPinned(true);
         $this->entityManager->flush();
 
         return $comment;
@@ -186,7 +186,7 @@ class CommentService
 
     public function unpinComment(Comment $comment): Comment
     {
-        $comment->setIsPinned(false);
+        $comment->setPinned(false);
         $this->entityManager->flush();
 
         return $comment;
@@ -222,7 +222,7 @@ class CommentService
         return $this->commentRepository->findByAuthor($authorId, $options);
     }
 
-    public function getCommentsByIp(string $ipAddress, \DateTimeInterface $since = null): array
+    public function getCommentsByIp(string $ipAddress, ?\DateTimeInterface $since = null): array
     {
         return $this->commentRepository->findByIpAddress($ipAddress, $since);
     }
@@ -232,7 +232,7 @@ class CommentService
         return $this->commentRepository->find($id);
     }
 
-    public function getStatistics(string $targetType = null, string $targetId = null): array
+    public function getStatistics(?string $targetType = null, ?string $targetId = null): array
     {
         return $this->commentRepository->getCommentStatistics($targetType, $targetId);
     }

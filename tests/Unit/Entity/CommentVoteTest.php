@@ -5,6 +5,7 @@ namespace Tourze\CommentBundle\Tests\Unit\Entity;
 use PHPUnit\Framework\TestCase;
 use Tourze\CommentBundle\Entity\Comment;
 use Tourze\CommentBundle\Entity\CommentVote;
+use Tourze\CommentBundle\Enum\VoteType;
 
 class CommentVoteTest extends TestCase
 {
@@ -15,7 +16,7 @@ class CommentVoteTest extends TestCase
         $this->assertNull($vote->getId());
         $this->assertNull($vote->getVoterId());
         $this->assertNull($vote->getVoterIp());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $vote->getCreatedAt());
+        $this->assertInstanceOf(\DateTime::class, $vote->getCreateTime());
     }
 
     public function test_settersAndGetters_workCorrectly(): void
@@ -27,33 +28,32 @@ class CommentVoteTest extends TestCase
         $vote->setComment($comment);
         $vote->setVoterId('user123');
         $vote->setVoterIp('127.0.0.1');
-        $vote->setVoteType(CommentVote::VOTE_LIKE);
-        $vote->setCreatedAt($now);
+        $vote->setVoteType(VoteType::LIKE);
+        $vote->setCreateTime(new \DateTime());
 
         $this->assertEquals($comment, $vote->getComment());
         $this->assertEquals('user123', $vote->getVoterId());
         $this->assertEquals('127.0.0.1', $vote->getVoterIp());
-        $this->assertEquals(CommentVote::VOTE_LIKE, $vote->getVoteType());
-        $this->assertEquals($now, $vote->getCreatedAt());
+        $this->assertEquals(VoteType::LIKE, $vote->getVoteType());
+        $this->assertInstanceOf(\DateTime::class, $vote->getCreateTime());
     }
 
     public function test_setVoteType_acceptsValidTypes(): void
     {
         $vote = new CommentVote();
 
-        $vote->setVoteType(CommentVote::VOTE_LIKE);
-        $this->assertEquals(CommentVote::VOTE_LIKE, $vote->getVoteType());
+        $vote->setVoteType(VoteType::LIKE);
+        $this->assertEquals(VoteType::LIKE, $vote->getVoteType());
 
-        $vote->setVoteType(CommentVote::VOTE_DISLIKE);
-        $this->assertEquals(CommentVote::VOTE_DISLIKE, $vote->getVoteType());
+        $vote->setVoteType(VoteType::DISLIKE);
+        $this->assertEquals(VoteType::DISLIKE, $vote->getVoteType());
     }
 
     public function test_setVoteType_throwsExceptionForInvalidType(): void
     {
         $vote = new CommentVote();
 
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid vote type');
+        $this->expectException(\TypeError::class);
 
         $vote->setVoteType('invalid_type');
     }
@@ -62,11 +62,11 @@ class CommentVoteTest extends TestCase
     {
         $vote = new CommentVote();
 
-        $vote->setVoteType(CommentVote::VOTE_LIKE);
+        $vote->setVoteType(VoteType::LIKE);
         $this->assertTrue($vote->isLike());
         $this->assertFalse($vote->isDislike());
 
-        $vote->setVoteType(CommentVote::VOTE_DISLIKE);
+        $vote->setVoteType(VoteType::DISLIKE);
         $this->assertFalse($vote->isLike());
         $this->assertTrue($vote->isDislike());
     }
@@ -85,27 +85,27 @@ class CommentVoteTest extends TestCase
 
     public function test_voteConstants_haveCorrectValues(): void
     {
-        $this->assertEquals('like', CommentVote::VOTE_LIKE);
-        $this->assertEquals('dislike', CommentVote::VOTE_DISLIKE);
+        $this->assertEquals('like', VoteType::LIKE->value);
+        $this->assertEquals('dislike', VoteType::DISLIKE->value);
     }
 
     public function test_fluentInterface_worksCorrectly(): void
     {
         $comment = new Comment();
-        $now = new \DateTimeImmutable();
+        $now = new \DateTime();
 
         $vote = (new CommentVote())
             ->setComment($comment)
             ->setVoterId('user456')
             ->setVoterIp('192.168.1.1')
-            ->setVoteType(CommentVote::VOTE_DISLIKE)
-            ->setCreatedAt($now);
+            ->setVoteType(VoteType::DISLIKE)
+            ->setCreateTime($now);
 
         $this->assertEquals($comment, $vote->getComment());
         $this->assertEquals('user456', $vote->getVoterId());
         $this->assertEquals('192.168.1.1', $vote->getVoterIp());
-        $this->assertEquals(CommentVote::VOTE_DISLIKE, $vote->getVoteType());
-        $this->assertEquals($now, $vote->getCreatedAt());
+        $this->assertEquals(VoteType::DISLIKE, $vote->getVoteType());
+        $this->assertEquals($now, $vote->getCreateTime());
     }
 
     public function test_voteWithComment_relationshipWorks(): void
@@ -118,7 +118,7 @@ class CommentVoteTest extends TestCase
         $vote = new CommentVote();
         $vote->setComment($comment);
         $vote->setVoterId('user789');
-        $vote->setVoteType(CommentVote::VOTE_LIKE);
+        $vote->setVoteType(VoteType::LIKE);
 
         $this->assertEquals($comment, $vote->getComment());
         $this->assertEquals('user789', $vote->getVoterId());
@@ -134,7 +134,7 @@ class CommentVoteTest extends TestCase
         $vote->setComment($comment);
         $vote->setVoterId(null);
         $vote->setVoterIp('203.0.113.1');
-        $vote->setVoteType(CommentVote::VOTE_DISLIKE);
+        $vote->setVoteType(VoteType::DISLIKE);
 
         $this->assertTrue($vote->isAnonymous());
         $this->assertTrue($vote->isDislike());
@@ -150,7 +150,7 @@ class CommentVoteTest extends TestCase
         $vote->setComment($comment);
         $vote->setVoterId('user_premium');
         $vote->setVoterIp('10.0.0.1');
-        $vote->setVoteType(CommentVote::VOTE_LIKE);
+        $vote->setVoteType(VoteType::LIKE);
 
         $this->assertFalse($vote->isAnonymous());
         $this->assertTrue($vote->isLike());
@@ -161,13 +161,15 @@ class CommentVoteTest extends TestCase
     public function test_createdAtIsImmutable(): void
     {
         $vote = new CommentVote();
-        $originalCreatedAt = $vote->getCreatedAt();
+        $vote->setCreateTime(new \DateTime('2023-01-01 10:00:00'));
+        $originalTime = $vote->getCreateTime()->format('Y-m-d H:i:s');
 
-        // 尝试修改时间（这应该不会影响原始对象）
-        $modifiedTime = $originalCreatedAt->modify('+1 hour');
+        // DateTime 是可变的，所以修改会影响原始对象
+        $vote->getCreateTime()->modify('+1 hour');
 
-        $this->assertEquals($originalCreatedAt, $vote->getCreatedAt());
-        $this->assertNotEquals($modifiedTime, $vote->getCreatedAt());
+        // 验证时间已被修改
+        $this->assertEquals('2023-01-01 11:00:00', $vote->getCreateTime()->format('Y-m-d H:i:s'));
+        $this->assertNotEquals($originalTime, $vote->getCreateTime()->format('Y-m-d H:i:s'));
     }
 
     public function test_multipleVotesOnSameComment(): void
@@ -177,12 +179,12 @@ class CommentVoteTest extends TestCase
         $likeVote = new CommentVote();
         $likeVote->setComment($comment);
         $likeVote->setVoterId('user1');
-        $likeVote->setVoteType(CommentVote::VOTE_LIKE);
+        $likeVote->setVoteType(VoteType::LIKE);
 
         $dislikeVote = new CommentVote();
         $dislikeVote->setComment($comment);
         $dislikeVote->setVoterId('user2');
-        $dislikeVote->setVoteType(CommentVote::VOTE_DISLIKE);
+        $dislikeVote->setVoteType(VoteType::DISLIKE);
 
         $this->assertEquals($comment, $likeVote->getComment());
         $this->assertEquals($comment, $dislikeVote->getComment());
@@ -196,7 +198,7 @@ class CommentVoteTest extends TestCase
         $vote = new CommentVote();
 
         // 测试空字符串
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\TypeError::class);
         $vote->setVoteType('');
     }
 
@@ -205,7 +207,7 @@ class CommentVoteTest extends TestCase
         $vote = new CommentVote();
 
         // 测试大小写敏感
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\TypeError::class);
         $vote->setVoteType('LIKE');
     }
 
@@ -219,8 +221,8 @@ class CommentVoteTest extends TestCase
             try {
                 $vote->setVoteType($invalidType);
                 $this->fail("Expected exception for invalid vote type: {$invalidType}");
-            } catch (\InvalidArgumentException $e) {
-                $this->assertEquals('Invalid vote type', $e->getMessage());
+            } catch (\TypeError $e) {
+                $this->assertStringContainsString('must be of type', $e->getMessage());
             }
         }
     }

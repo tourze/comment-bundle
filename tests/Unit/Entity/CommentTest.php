@@ -5,6 +5,7 @@ namespace Tourze\CommentBundle\Tests\Unit\Entity;
 use PHPUnit\Framework\TestCase;
 use Tourze\CommentBundle\Entity\Comment;
 use Tourze\CommentBundle\Entity\CommentVote;
+use Tourze\CommentBundle\Enum\CommentStatus;
 
 class CommentTest extends TestCase
 {
@@ -13,13 +14,13 @@ class CommentTest extends TestCase
         $comment = new Comment();
 
         $this->assertNull($comment->getId());
-        $this->assertEquals('pending', $comment->getStatus());
+        $this->assertEquals(CommentStatus::PENDING, $comment->getStatus());
         $this->assertEquals(0, $comment->getLikesCount());
         $this->assertEquals(0, $comment->getDislikesCount());
         $this->assertFalse($comment->isPinned());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $comment->getCreatedAt());
-        $this->assertNull($comment->getUpdatedAt());
-        $this->assertNull($comment->getDeletedAt());
+        $this->assertNull($comment->getCreateTime());
+        $this->assertNull($comment->getUpdateTime());
+        $this->assertNull($comment->getDeleteTime());
         $this->assertEmpty($comment->getReplies());
         $this->assertEmpty($comment->getVotes());
     }
@@ -37,13 +38,13 @@ class CommentTest extends TestCase
         $comment->setAuthorEmail('test@example.com');
         $comment->setAuthorIp('127.0.0.1');
         $comment->setUserAgent('Mozilla/5.0');
-        $comment->setStatus('approved');
+        $comment->setStatus(CommentStatus::APPROVED);
         $comment->setLikesCount(5);
         $comment->setDislikesCount(2);
-        $comment->setIsPinned(true);
-        $comment->setCreatedAt($now);
-        $comment->setUpdatedAt($now);
-        $comment->setDeletedAt($now);
+        $comment->setPinned(true);
+        $comment->setCreateTime($now);
+        $comment->setUpdateTime($now);
+        $comment->setDeleteTime(\DateTime::createFromImmutable($now));
 
         $this->assertEquals('article', $comment->getTargetType());
         $this->assertEquals('123', $comment->getTargetId());
@@ -53,13 +54,13 @@ class CommentTest extends TestCase
         $this->assertEquals('test@example.com', $comment->getAuthorEmail());
         $this->assertEquals('127.0.0.1', $comment->getAuthorIp());
         $this->assertEquals('Mozilla/5.0', $comment->getUserAgent());
-        $this->assertEquals('approved', $comment->getStatus());
+        $this->assertEquals(CommentStatus::APPROVED, $comment->getStatus());
         $this->assertEquals(5, $comment->getLikesCount());
         $this->assertEquals(2, $comment->getDislikesCount());
         $this->assertTrue($comment->isPinned());
-        $this->assertEquals($now, $comment->getCreatedAt());
-        $this->assertEquals($now, $comment->getUpdatedAt());
-        $this->assertEquals($now, $comment->getDeletedAt());
+        $this->assertEquals($now, $comment->getCreateTime());
+        $this->assertEquals($now, $comment->getUpdateTime());
+        $this->assertEquals(\DateTime::createFromImmutable($now), $comment->getDeleteTime());
     }
 
     public function test_parentAndReplies_relationshipWorks(): void
@@ -119,17 +120,17 @@ class CommentTest extends TestCase
     {
         $comment = new Comment();
 
-        $comment->setStatus('approved');
+        $comment->setStatus(CommentStatus::APPROVED);
         $this->assertTrue($comment->isApproved());
         $this->assertFalse($comment->isPending());
         $this->assertFalse($comment->isRejected());
 
-        $comment->setStatus('pending');
+        $comment->setStatus(CommentStatus::PENDING);
         $this->assertFalse($comment->isApproved());
         $this->assertTrue($comment->isPending());
         $this->assertFalse($comment->isRejected());
 
-        $comment->setStatus('rejected');
+        $comment->setStatus(CommentStatus::REJECTED);
         $this->assertFalse($comment->isApproved());
         $this->assertFalse($comment->isPending());
         $this->assertTrue($comment->isRejected());
@@ -140,7 +141,7 @@ class CommentTest extends TestCase
         $comment = new Comment();
         $this->assertFalse($comment->isDeleted());
 
-        $comment->setDeletedAt(new \DateTimeImmutable());
+        $comment->setDeleteTime(new \DateTime());
         $this->assertTrue($comment->isDeleted());
     }
 

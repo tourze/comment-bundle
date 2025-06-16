@@ -69,7 +69,7 @@ class NotificationService
         foreach ($mentions as $mention) {
             if (!$mention->isNotified()) {
                 $this->notifyMention($comment, $mention->getMentionedUserId());
-                $mention->setIsNotified(true);
+                $mention->setNotified(true);
             }
         }
         
