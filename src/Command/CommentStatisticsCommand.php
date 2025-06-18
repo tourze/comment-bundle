@@ -16,6 +16,8 @@ use Tourze\CommentBundle\Service\CommentService;
 )]
 class CommentStatisticsCommand extends Command
 {
+    public const NAME = 'comment:statistics';
+    
     public function __construct(
         private readonly CommentService $commentService
     ) {

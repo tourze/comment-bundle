@@ -25,6 +25,7 @@
     "tourze/doctrine-ip-bundle": "0.0.*",
     "tourze/doctrine-timestamp-bundle": "0.0.*",
     "tourze/doctrine-user-bundle": "0.0.*",
+    "tourze/enum-extra": "0.1.*",
     "tourze/symfony-integration-test-kernel": "0.0.*"
   },
   "require-dev": {

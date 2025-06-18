@@ -16,6 +16,8 @@ use Tourze\CommentBundle\Service\CommentService;
 )]
 class CommentModerationCommand extends Command
 {
+    public const NAME = 'comment:moderation';
+    
     public function __construct(
         private readonly CommentService $commentService
     ) {
