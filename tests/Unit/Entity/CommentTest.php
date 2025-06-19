@@ -44,7 +44,7 @@ class CommentTest extends TestCase
         $comment->setPinned(true);
         $comment->setCreateTime($now);
         $comment->setUpdateTime($now);
-        $comment->setDeleteTime(\DateTime::createFromImmutable($now));
+        $comment->setDeleteTime($now);
 
         $this->assertEquals('article', $comment->getTargetType());
         $this->assertEquals('123', $comment->getTargetId());
@@ -60,7 +60,7 @@ class CommentTest extends TestCase
         $this->assertTrue($comment->isPinned());
         $this->assertEquals($now, $comment->getCreateTime());
         $this->assertEquals($now, $comment->getUpdateTime());
-        $this->assertEquals(\DateTime::createFromImmutable($now), $comment->getDeleteTime());
+        $this->assertEquals($now, $comment->getDeleteTime());
     }
 
     public function test_parentAndReplies_relationshipWorks(): void
@@ -141,7 +141,7 @@ class CommentTest extends TestCase
         $comment = new Comment();
         $this->assertFalse($comment->isDeleted());
 
-        $comment->setDeleteTime(new \DateTime());
+        $comment->setDeleteTime(new \DateTimeImmutable());
         $this->assertTrue($comment->isDeleted());
     }
 

@@ -18,7 +18,7 @@ class CommentMention implements \Stringable
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: Types::INTEGER)]
+    #[ORM\Column(type: Types::INTEGER, options: ['comment' => '主键ID'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Comment::class, fetch: 'EXTRA_LAZY')]
@@ -35,15 +35,15 @@ class CommentMention implements \Stringable
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false, 'comment' => '是否已通知'])]
     private bool $notified = false;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '通知时间'])]
-    private ?\DateTime $notifyTime = null;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '通知时间'])]
+    private ?\DateTimeImmutable $notifyTime = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true, 'comment' => '是否有效'])]
     private bool $valid = true;
 
     public function __construct()
     {
-        $this->createTime = new \DateTime();
+        $this->createTime = new \DateTimeImmutable();
     }
 
     public function getComment(): Comment
@@ -88,17 +88,17 @@ class CommentMention implements \Stringable
     {
         $this->notified = $notified;
         if ($notified && $this->notifyTime === null) {
-            $this->notifyTime = new \DateTime();
+            $this->notifyTime = new \DateTimeImmutable();
         }
         return $this;
     }
 
-    public function getNotifyTime(): ?\DateTime
+    public function getNotifyTime(): ?\DateTimeImmutable
     {
         return $this->notifyTime;
     }
 
-    public function setNotifyTime(?\DateTime $notifyTime): self
+    public function setNotifyTime(?\DateTimeImmutable $notifyTime): self
     {
         $this->notifyTime = $notifyTime;
         return $this;

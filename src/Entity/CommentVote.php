@@ -21,7 +21,7 @@ class CommentVote implements \Stringable
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: Types::INTEGER)]
+    #[ORM\Column(type: Types::INTEGER, options: ['comment' => '主键ID'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Comment::class, inversedBy: 'votes', fetch: 'EXTRA_LAZY')]

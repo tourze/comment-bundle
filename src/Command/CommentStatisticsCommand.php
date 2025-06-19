@@ -11,7 +11,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Tourze\CommentBundle\Service\CommentService;
 
 #[AsCommand(
-    name: 'comment:statistics',
+    name: self::NAME,
     description: '显示评论系统统计信息'
 )]
 class CommentStatisticsCommand extends Command
@@ -43,7 +43,7 @@ class CommentStatisticsCommand extends Command
         $this->showBasicStats($io, $targetType, $targetId);
 
         // 显示最近评论
-        if ($recentCount = $input->getOption('recent')) {
+        if (($recentCount = $input->getOption('recent')) !== null) {
             $this->showRecentComments($io, (int) $recentCount);
         }
 
@@ -55,9 +55,9 @@ class CommentStatisticsCommand extends Command
         $stats = $this->commentService->getStatistics($targetType, $targetId);
 
         $title = '评论系统统计信息';
-        if ($targetType && $targetId) {
+        if ($targetType !== null && $targetId !== null) {
             $title .= " ({$targetType}:{$targetId})";
-        } elseif ($targetType) {
+        } elseif ($targetType !== null) {
             $title .= " ({$targetType})";
         }
 

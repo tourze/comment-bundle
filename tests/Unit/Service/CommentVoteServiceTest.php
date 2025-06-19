@@ -282,7 +282,7 @@ class CommentVoteServiceTest extends TestCase
     {
         $comment = new Comment();
         $comment->setStatus(CommentStatus::APPROVED);
-        $comment->setDeleteTime(new \DateTime());
+        $comment->setDeleteTime(new \DateTimeImmutable());
 
         $this->assertFalse($this->voteService->canVote($comment, 'user123', '127.0.0.1'));
     }

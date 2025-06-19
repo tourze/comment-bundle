@@ -14,7 +14,7 @@ class CommentMentionTest extends TestCase
 
         $this->assertNull($mention->getId());
         $this->assertFalse($mention->isNotified());
-        $this->assertInstanceOf(\DateTime::class, $mention->getCreateTime());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $mention->getCreateTime());
         $this->assertNull($mention->getNotifyTime());
         $this->assertNull($mention->getMentionedUserName());
     }
@@ -23,7 +23,7 @@ class CommentMentionTest extends TestCase
     {
         $mention = new CommentMention();
         $comment = new Comment();
-        $now = new \DateTime();
+        $now = new \DateTimeImmutable();
 
         $mention->setComment($comment);
         $mention->setMentionedUserId('user123');
@@ -48,13 +48,13 @@ class CommentMentionTest extends TestCase
         $mention->setNotified(true);
 
         $this->assertTrue($mention->isNotified());
-        $this->assertInstanceOf(\DateTime::class, $mention->getNotifyTime());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $mention->getNotifyTime());
     }
 
     public function test_setIsNotified_doesNotOverrideExistingNotifiedAt(): void
     {
         $mention = new CommentMention();
-        $existingDate = new \DateTime('2023-01-01 12:00:00');
+        $existingDate = new \DateTimeImmutable('2023-01-01 12:00:00');
         
         $mention->setNotifyTime($existingDate);
         $mention->setNotified(true);
@@ -94,7 +94,7 @@ class CommentMentionTest extends TestCase
     public function test_fluentInterface_worksCorrectly(): void
     {
         $comment = new Comment();
-        $now = new \DateTime();
+        $now = new \DateTimeImmutable();
 
         $mention = (new CommentMention())
             ->setComment($comment)
@@ -131,7 +131,7 @@ class CommentMentionTest extends TestCase
 
         // 验证通知状态
         $this->assertTrue($mention->isNotified());
-        $this->assertInstanceOf(\DateTime::class, $mention->getNotifyTime());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $mention->getNotifyTime());
         $this->assertEqualsWithDelta(
             time(),
             $mention->getNotifyTime()->getTimestamp(),
@@ -152,15 +152,15 @@ class CommentMentionTest extends TestCase
     public function test_createdAtIsImmutable(): void
     {
         $mention = new CommentMention();
-        $mention->setCreateTime(new \DateTime('2023-01-01 10:00:00'));
+        $mention->setCreateTime(new \DateTimeImmutable('2023-01-01 10:00:00'));
         $originalTime = $mention->getCreateTime()->format('Y-m-d H:i:s');
 
-        // DateTime 是可变的，所以修改会影响原始对象
-        $mention->getCreateTime()->modify('+1 hour');
+        // DateTimeImmutable 是不可变的，所以修改不会影响原始对象
+        $newTime = $mention->getCreateTime()->modify('+1 hour');
 
-        // 验证时间已被修改
-        $this->assertEquals('2023-01-01 11:00:00', $mention->getCreateTime()->format('Y-m-d H:i:s'));
-        $this->assertNotEquals($originalTime, $mention->getCreateTime()->format('Y-m-d H:i:s'));
+        // 验证原时间未被修改
+        $this->assertEquals($originalTime, $mention->getCreateTime()->format('Y-m-d H:i:s'));
+        $this->assertEquals('2023-01-01 11:00:00', $newTime->format('Y-m-d H:i:s'));
     }
 
     public function test_multipleMentionsFromSameComment(): void

@@ -3,7 +3,6 @@
 namespace Tourze\CommentBundle\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Tourze\CommentBundle\Entity\Comment;
 use Tourze\CommentBundle\Enum\CommentStatus;
@@ -237,18 +236,4 @@ class CommentRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    private function addTargetFilter(QueryBuilder $qb, ?string $targetType = null, ?string $targetId = null): QueryBuilder
-    {
-        if ($targetType !== null) {
-            $qb->andWhere('c.targetType = :targetType')
-               ->setParameter('targetType', $targetType);
-        }
-
-        if ($targetId !== null) {
-            $qb->andWhere('c.targetId = :targetId')
-               ->setParameter('targetId', $targetId);
-        }
-
-        return $qb;
-    }
 }

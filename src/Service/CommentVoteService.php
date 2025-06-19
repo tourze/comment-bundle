@@ -42,7 +42,7 @@ class CommentVoteService
     public function getVoteType(Comment $comment, ?string $voterId = null, ?string $voterIp = null): ?VoteType
     {
         $voteType = $this->voteRepository->getVoteType($comment, $voterId, $voterIp);
-        return $voteType ? VoteType::from($voteType) : null;
+        return $voteType !== null ? VoteType::from($voteType) : null;
     }
 
     public function removeVote(Comment $comment, ?string $voterId = null, ?string $voterIp = null): bool

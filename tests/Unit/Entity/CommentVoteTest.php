@@ -16,7 +16,7 @@ class CommentVoteTest extends TestCase
         $this->assertNull($vote->getId());
         $this->assertNull($vote->getVoterId());
         $this->assertNull($vote->getVoterIp());
-        $this->assertInstanceOf(\DateTime::class, $vote->getCreateTime());
+        $this->assertNull($vote->getCreateTime());
     }
 
     public function test_settersAndGetters_workCorrectly(): void
@@ -29,13 +29,13 @@ class CommentVoteTest extends TestCase
         $vote->setVoterId('user123');
         $vote->setVoterIp('127.0.0.1');
         $vote->setVoteType(VoteType::LIKE);
-        $vote->setCreateTime(new \DateTime());
+        $vote->setCreateTime(new \DateTimeImmutable());
 
         $this->assertEquals($comment, $vote->getComment());
         $this->assertEquals('user123', $vote->getVoterId());
         $this->assertEquals('127.0.0.1', $vote->getVoterIp());
         $this->assertEquals(VoteType::LIKE, $vote->getVoteType());
-        $this->assertInstanceOf(\DateTime::class, $vote->getCreateTime());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $vote->getCreateTime());
     }
 
     public function test_setVoteType_acceptsValidTypes(): void
@@ -92,7 +92,7 @@ class CommentVoteTest extends TestCase
     public function test_fluentInterface_worksCorrectly(): void
     {
         $comment = new Comment();
-        $now = new \DateTime();
+        $now = new \DateTimeImmutable();
 
         $vote = (new CommentVote())
             ->setComment($comment)
@@ -161,15 +161,15 @@ class CommentVoteTest extends TestCase
     public function test_createdAtIsImmutable(): void
     {
         $vote = new CommentVote();
-        $vote->setCreateTime(new \DateTime('2023-01-01 10:00:00'));
+        $vote->setCreateTime(new \DateTimeImmutable('2023-01-01 10:00:00'));
         $originalTime = $vote->getCreateTime()->format('Y-m-d H:i:s');
 
-        // DateTime 是可变的，所以修改会影响原始对象
-        $vote->getCreateTime()->modify('+1 hour');
+        // DateTimeImmutable 是不可变的，所以修改不会影响原始对象
+        $newTime = $vote->getCreateTime()->modify('+1 hour');
 
-        // 验证时间已被修改
-        $this->assertEquals('2023-01-01 11:00:00', $vote->getCreateTime()->format('Y-m-d H:i:s'));
-        $this->assertNotEquals($originalTime, $vote->getCreateTime()->format('Y-m-d H:i:s'));
+        // 验证原时间未被修改
+        $this->assertEquals($originalTime, $vote->getCreateTime()->format('Y-m-d H:i:s'));
+        $this->assertEquals('2023-01-01 11:00:00', $newTime->format('Y-m-d H:i:s'));
     }
 
     public function test_multipleVotesOnSameComment(): void

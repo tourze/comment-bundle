@@ -23,7 +23,7 @@ class Comment implements \Stringable
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: Types::INTEGER)]
+    #[ORM\Column(type: Types::INTEGER, options: ['comment' => '主键ID'])]
     private ?int $id = null;
 
     #[IndexColumn]
@@ -75,8 +75,8 @@ class Comment implements \Stringable
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false, 'comment' => '是否置顶'])]
     private bool $pinned = false;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '删除时间'])]
-    private ?\DateTime $deleteTime = null;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '删除时间'])]
+    private ?\DateTimeImmutable $deleteTime = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true, 'comment' => '是否有效'])]
     private bool $valid = true;
@@ -262,12 +262,12 @@ class Comment implements \Stringable
         return $this;
     }
 
-    public function getDeleteTime(): ?\DateTime
+    public function getDeleteTime(): ?\DateTimeImmutable
     {
         return $this->deleteTime;
     }
 
-    public function setDeleteTime(?\DateTime $deleteTime): self
+    public function setDeleteTime(?\DateTimeImmutable $deleteTime): self
     {
         $this->deleteTime = $deleteTime;
         return $this;

@@ -11,7 +11,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Tourze\CommentBundle\Service\CommentService;
 
 #[AsCommand(
-    name: 'comment:moderation',
+    name: self::NAME,
     description: '评论审核管理命令'
 )]
 class CommentModerationCommand extends Command
@@ -38,19 +38,19 @@ class CommentModerationCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        if ($input->getOption('list')) {
+        if ($input->getOption('list') !== null) {
             return $this->listPendingComments($io, (int) $input->getOption('limit'));
         }
 
-        if ($approveId = $input->getOption('approve')) {
+        if (($approveId = $input->getOption('approve')) !== null) {
             return $this->approveComment($io, (int) $approveId);
         }
 
-        if ($rejectId = $input->getOption('reject')) {
+        if (($rejectId = $input->getOption('reject')) !== null) {
             return $this->rejectComment($io, (int) $rejectId);
         }
 
-        if ($input->getOption('auto-approve')) {
+        if ($input->getOption('auto-approve') !== null) {
             return $this->autoApproveComments($io);
         }
 
@@ -91,7 +91,7 @@ class CommentModerationCommand extends Command
     {
         try {
             $comment = $this->commentService->getCommentById($commentId);
-            if (!$comment) {
+            if ($comment === null) {
                 $io->error("评论 ID {$commentId} 不存在");
                 return Command::FAILURE;
             }
@@ -109,7 +109,7 @@ class CommentModerationCommand extends Command
     {
         try {
             $comment = $this->commentService->getCommentById($commentId);
-            if (!$comment) {
+            if ($comment === null) {
                 $io->error("评论 ID {$commentId} 不存在");
                 return Command::FAILURE;
             }

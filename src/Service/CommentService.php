@@ -139,7 +139,7 @@ class CommentService
     public function deleteComment(Comment $comment, bool $softDelete = true): void
     {
         if ($softDelete) {
-            $comment->setDeleteTime(new \DateTime());
+            $comment->setDeleteTime(new \DateTimeImmutable());
             $comment->setStatus(CommentStatus::DELETED);
             $this->entityManager->flush();
         } else {
