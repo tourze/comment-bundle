@@ -8,7 +8,7 @@ use Tourze\CommentBundle\Enum\VoteType;
 use Tourze\CommentBundle\Repository\CommentVoteRepository;
 use Tourze\DoctrineIndexedBundle\Attribute\IndexColumn;
 use Tourze\DoctrineIpBundle\Attribute\CreateIpColumn;
-use Tourze\DoctrineTimestampBundle\Attribute\CreateTimeColumn;
+use Tourze\DoctrineTimestampBundle\Traits\CreateTimeAware;
 use Tourze\DoctrineUserBundle\Attribute\CreatedByColumn;
 
 #[ORM\Entity(repositoryClass: CommentVoteRepository::class)]
@@ -17,6 +17,8 @@ use Tourze\DoctrineUserBundle\Attribute\CreatedByColumn;
 #[ORM\Index(name: 'comment_vote_idx_comment', columns: ['comment_id'])]
 class CommentVote implements \Stringable
 {
+    use CreateTimeAware;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]
@@ -38,17 +40,8 @@ class CommentVote implements \Stringable
     #[ORM\Column(type: Types::STRING, length: 10, enumType: VoteType::class, options: ['comment' => '投票类型'])]
     private VoteType $voteType;
 
-    #[CreateTimeColumn]
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, options: ['comment' => '创建时间'])]
-    private \DateTime $createTime;
-
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true, 'comment' => '是否有效'])]
     private bool $valid = true;
-
-    public function __construct()
-    {
-        $this->createTime = new \DateTime();
-    }
 
     public function getComment(): Comment
     {
@@ -91,17 +84,6 @@ class CommentVote implements \Stringable
     public function setVoteType(VoteType $voteType): self
     {
         $this->voteType = $voteType;
-        return $this;
-    }
-
-    public function getCreateTime(): \DateTime
-    {
-        return $this->createTime;
-    }
-
-    public function setCreateTime(\DateTime $createTime): self
-    {
-        $this->createTime = $createTime;
         return $this;
     }
 

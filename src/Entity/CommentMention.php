@@ -6,7 +6,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Tourze\CommentBundle\Repository\CommentMentionRepository;
 use Tourze\DoctrineIndexedBundle\Attribute\IndexColumn;
-use Tourze\DoctrineTimestampBundle\Attribute\CreateTimeColumn;
+use Tourze\DoctrineTimestampBundle\Traits\CreateTimeAware;
 
 #[ORM\Entity(repositoryClass: CommentMentionRepository::class)]
 #[ORM\Table(name: 'comment_mention', options: ['comment' => '评论提及表'])]
@@ -14,6 +14,8 @@ use Tourze\DoctrineTimestampBundle\Attribute\CreateTimeColumn;
 #[ORM\Index(name: 'comment_mention_idx_comment', columns: ['comment_id'])]
 class CommentMention implements \Stringable
 {
+    use CreateTimeAware;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]
@@ -32,10 +34,6 @@ class CommentMention implements \Stringable
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false, 'comment' => '是否已通知'])]
     private bool $notified = false;
-
-    #[CreateTimeColumn]
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, options: ['comment' => '创建时间'])]
-    private \DateTime $createTime;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '通知时间'])]
     private ?\DateTime $notifyTime = null;
@@ -92,17 +90,6 @@ class CommentMention implements \Stringable
         if ($notified && $this->notifyTime === null) {
             $this->notifyTime = new \DateTime();
         }
-        return $this;
-    }
-
-    public function getCreateTime(): \DateTime
-    {
-        return $this->createTime;
-    }
-
-    public function setCreateTime(\DateTime $createTime): self
-    {
-        $this->createTime = $createTime;
         return $this;
     }
 
