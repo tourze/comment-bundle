@@ -1,6 +1,6 @@
 <?php
 
-namespace Tourze\CommentBundle\Tests\Unit\Service;
+namespace Tourze\CommentBundle\Tests\Integration\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;

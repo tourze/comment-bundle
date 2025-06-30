@@ -7,7 +7,6 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Tourze\CommentBundle\CommentBundle;
 use Tourze\CommentBundle\Entity\Comment;
 use Tourze\CommentBundle\Enum\CommentStatus;
-use Tourze\CommentBundle\Repository\CommentRepository;
 use Tourze\CommentBundle\Service\CommentService;
 use Tourze\IntegrationTestKernel\IntegrationTestKernel;
 
@@ -15,7 +14,6 @@ class CommentServiceIntegrationTest extends KernelTestCase
 {
     private EntityManagerInterface $entityManager;
     private CommentService $commentService;
-    private CommentRepository $commentRepository;
 
     public function test_createComment_withValidData(): void
     {
@@ -233,7 +231,6 @@ class CommentServiceIntegrationTest extends KernelTestCase
 
         $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
         $this->commentService = static::getContainer()->get(CommentService::class);
-        $this->commentRepository = static::getContainer()->get(CommentRepository::class);
     }
 
     protected function tearDown(): void

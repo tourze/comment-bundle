@@ -1,6 +1,6 @@
 <?php
 
-namespace Tourze\CommentBundle\Tests\Unit\Service;
+namespace Tourze\CommentBundle\Tests\Integration\Service;
 
 use PHPUnit\Framework\TestCase;
 use Tourze\CommentBundle\Service\ContentFilterService;

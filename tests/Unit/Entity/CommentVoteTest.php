@@ -55,6 +55,7 @@ class CommentVoteTest extends TestCase
 
         $this->expectException(\TypeError::class);
 
+        /** @phpstan-ignore-next-line */
         $vote->setVoteType('invalid_type');
     }
 
@@ -162,13 +163,16 @@ class CommentVoteTest extends TestCase
     {
         $vote = new CommentVote();
         $vote->setCreateTime(new \DateTimeImmutable('2023-01-01 10:00:00'));
-        $originalTime = $vote->getCreateTime()->format('Y-m-d H:i:s');
+        
+        $createTime = $vote->getCreateTime();
+        $this->assertNotNull($createTime);
+        $originalTime = $createTime->format('Y-m-d H:i:s');
 
         // DateTimeImmutable 是不可变的，所以修改不会影响原始对象
-        $newTime = $vote->getCreateTime()->modify('+1 hour');
+        $newTime = $createTime->modify('+1 hour');
 
         // 验证原时间未被修改
-        $this->assertEquals($originalTime, $vote->getCreateTime()->format('Y-m-d H:i:s'));
+        $this->assertEquals($originalTime, $createTime->format('Y-m-d H:i:s'));
         $this->assertEquals('2023-01-01 11:00:00', $newTime->format('Y-m-d H:i:s'));
     }
 
@@ -199,6 +203,7 @@ class CommentVoteTest extends TestCase
 
         // 测试空字符串
         $this->expectException(\TypeError::class);
+        /** @phpstan-ignore-next-line */
         $vote->setVoteType('');
     }
 
@@ -208,6 +213,7 @@ class CommentVoteTest extends TestCase
 
         // 测试大小写敏感
         $this->expectException(\TypeError::class);
+        /** @phpstan-ignore-next-line */
         $vote->setVoteType('LIKE');
     }
 
@@ -219,6 +225,7 @@ class CommentVoteTest extends TestCase
 
         foreach ($invalidTypes as $invalidType) {
             try {
+                /** @phpstan-ignore-next-line */
                 $vote->setVoteType($invalidType);
                 $this->fail("Expected exception for invalid vote type: {$invalidType}");
             } catch (\TypeError $e) {

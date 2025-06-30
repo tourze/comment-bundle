@@ -21,8 +21,8 @@ class CommentTest extends TestCase
         $this->assertNull($comment->getCreateTime());
         $this->assertNull($comment->getUpdateTime());
         $this->assertNull($comment->getDeleteTime());
-        $this->assertEmpty($comment->getReplies());
-        $this->assertEmpty($comment->getVotes());
+        $this->assertCount(0, $comment->getReplies());
+        $this->assertCount(0, $comment->getVotes());
     }
 
     public function test_settersAndGetters_workCorrectly(): void
