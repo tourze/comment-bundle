@@ -14,58 +14,30 @@ use Tourze\CommentBundle\Event\CommentUpdatedEvent;
 use Tourze\CommentBundle\Repository\CommentMentionRepository;
 use Tourze\CommentBundle\Repository\CommentRepository;
 
-class CommentService
+readonly class CommentService
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly CommentRepository $commentRepository,
-        private readonly CommentMentionRepository $mentionRepository,
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly ContentFilterService $contentFilter,
-        private readonly MentionParserService $mentionParser
+        private EntityManagerInterface $entityManager,
+        private CommentRepository $commentRepository,
+        private CommentMentionRepository $mentionRepository,
+        private EventDispatcherInterface $eventDispatcher,
+        private ContentFilterService $contentFilter,
+        private MentionParserService $mentionParser,
     ) {
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function createComment(array $data): Comment
     {
         $comment = new Comment();
-        $comment->setTargetType($data['target_type']);
-        $comment->setTargetId($data['target_id']);
-        $comment->setContent($data['content']);
-        
-        if (!empty($data['author_id'])) {
-            $comment->setAuthorId($data['author_id']);
-        }
-        
-        if (!empty($data['author_name'])) {
-            $comment->setAuthorName($data['author_name']);
-        }
-        
-        if (!empty($data['author_email'])) {
-            $comment->setAuthorEmail($data['author_email']);
-        }
-        
-        if (!empty($data['author_ip'])) {
-            $comment->setAuthorIp($data['author_ip']);
-        }
-        
-        if (!empty($data['user_agent'])) {
-            $comment->setUserAgent($data['user_agent']);
-        }
-        
-        if (!empty($data['parent_id'])) {
-            $parent = $this->commentRepository->find($data['parent_id']);
-            if ($parent) {
-                $comment->setParent($parent);
-            }
-        }
+        $this->setCommentBasicData($comment, $data);
+        $this->setCommentAuthorData($comment, $data);
+        $this->setCommentParent($comment, $data);
 
         // 自动审核内容
-        if ($this->contentFilter->isContentSafe($comment->getContent())) {
-            $comment->setStatus(CommentStatus::APPROVED);
-        } else {
-            $comment->setStatus(CommentStatus::PENDING);
-        }
+        $this->setCommentStatus($comment);
 
         $this->entityManager->persist($comment);
         $this->entityManager->flush();
@@ -74,12 +46,92 @@ class CommentService
         $this->processMentions($comment);
 
         // 触发事件
-        $this->eventDispatcher->dispatch(
-            new CommentCreatedEvent($comment),
-            CommentCreatedEvent::NAME
-        );
+        $this->eventDispatcher->dispatch(new CommentCreatedEvent($comment));
 
         return $comment;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function setCommentBasicData(Comment $comment, array $data): void
+    {
+        $comment->setTargetType($this->normalizeToString($data['target_type']));
+        $comment->setTargetId($this->normalizeToString($data['target_id']));
+        $comment->setContent($this->normalizeToString($data['content']));
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function setCommentAuthorData(Comment $comment, array $data): void
+    {
+        $this->setAuthorFieldIfPresent($data, 'author_id', function (string $value) use ($comment): void {
+            $comment->setAuthorId($value);
+        });
+        $this->setAuthorFieldIfPresent($data, 'author_name', function (string $value) use ($comment): void {
+            $comment->setAuthorName($value);
+        });
+        $this->setAuthorFieldIfPresent($data, 'author_email', function (string $value) use ($comment): void {
+            $comment->setAuthorEmail($value);
+        });
+        $this->setAuthorFieldIfPresent($data, 'author_ip', function (string $value) use ($comment): void {
+            $comment->setAuthorIp($value);
+        });
+        $this->setAuthorFieldIfPresent($data, 'user_agent', function (string $value) use ($comment): void {
+            $comment->setUserAgent($value);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @param callable(string): void $setter
+     */
+    private function setAuthorFieldIfPresent(array $data, string $fieldName, callable $setter): void
+    {
+        if (!isset($data[$fieldName]) || '' === $data[$fieldName]) {
+            return;
+        }
+
+        $value = $this->normalizeToString($data[$fieldName]);
+        $setter($value);
+    }
+
+    private function normalizeToString(mixed $value): string
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+        if (is_numeric($value)) {
+            return (string) $value;
+        }
+        if (is_object($value) && method_exists($value, '__toString')) {
+            return (string) $value;
+        }
+
+        return '';
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function setCommentParent(Comment $comment, array $data): void
+    {
+        if (isset($data['parent_id'])) {
+            $parent = $this->commentRepository->find($data['parent_id']);
+            if (null !== $parent) {
+                $comment->setParent($parent);
+            }
+        }
+    }
+
+    private function setCommentStatus(Comment $comment): void
+    {
+        if ($this->contentFilter->isContentSafe($comment->getContent())) {
+            $comment->setStatus(CommentStatus::APPROVED);
+        } else {
+            $comment->setStatus(CommentStatus::PENDING);
+        }
     }
 
     private function processMentions(Comment $comment): void
@@ -93,9 +145,10 @@ class CommentService
         foreach ($mentions as $mention) {
             $commentMention = new CommentMention();
             $commentMention->setComment($comment);
-            $commentMention->setMentionedUserId($mention['user_id']);
-            if (!empty($mention['user_name'])) {
-                $commentMention->setMentionedUserName($mention['user_name']);
+            $commentMention->setMentionedUserId($this->normalizeToString($mention['user_id']));
+
+            if (isset($mention['user_name']) && '' !== $mention['user_name']) {
+                $commentMention->setMentionedUserName($this->normalizeToString($mention['user_name']));
             }
 
             $this->entityManager->persist($commentMention);
@@ -104,12 +157,16 @@ class CommentService
         $this->entityManager->flush();
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function updateComment(Comment $comment, array $data): Comment
     {
         $oldContent = $comment->getContent();
 
         if (isset($data['content'])) {
-            $comment->setContent($data['content']);
+            $content = $this->normalizeToString($data['content']);
+            $comment->setContent($content);
             $comment->setUpdateTime(new \DateTimeImmutable());
 
             // 重新审核内容
@@ -128,10 +185,7 @@ class CommentService
         }
 
         // 触发事件
-        $this->eventDispatcher->dispatch(
-            new CommentUpdatedEvent($comment),
-            CommentUpdatedEvent::NAME
-        );
+        $this->eventDispatcher->dispatch(new CommentUpdatedEvent($comment));
 
         return $comment;
     }
@@ -148,10 +202,7 @@ class CommentService
         }
 
         // 触发事件
-        $this->eventDispatcher->dispatch(
-            new CommentDeletedEvent($comment),
-            CommentDeletedEvent::NAME
-        );
+        $this->eventDispatcher->dispatch(new CommentDeletedEvent($comment));
     }
 
     public function approveComment(Comment $comment): Comment
@@ -160,10 +211,7 @@ class CommentService
         $this->entityManager->flush();
 
         // 触发事件
-        $this->eventDispatcher->dispatch(
-            new CommentApprovedEvent($comment),
-            CommentApprovedEvent::NAME
-        );
+        $this->eventDispatcher->dispatch(new CommentApprovedEvent($comment));
 
         return $comment;
     }
@@ -192,14 +240,72 @@ class CommentService
         return $comment;
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @return array<Comment>
+     */
     public function getCommentsByTarget(string $targetType, string $targetId, array $options = []): array
     {
-        return $this->commentRepository->findByTarget($targetType, $targetId, $options);
+        $normalizedOptions = $this->normalizeQueryOptions($options, [
+            'status' => 'string',
+            'parent_only' => 'bool',
+            'order_by' => 'string',
+            'order_direction' => 'string',
+            'limit' => 'int',
+            'offset' => 'int',
+        ]);
+
+        /** @var array{status?: string, parent_only?: bool, order_by?: string, order_direction?: string, limit?: int, offset?: int} $normalizedOptions */
+        return $this->commentRepository->findByTarget($targetType, $targetId, $normalizedOptions);
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @param array<string, string> $typeMap
+     * @return array<string, mixed>
+     */
+    private function normalizeQueryOptions(array $options, array $typeMap): array
+    {
+        $normalized = [];
+
+        foreach ($typeMap as $key => $type) {
+            if (!isset($options[$key])) {
+                continue;
+            }
+
+            $value = $this->castToType($options[$key], $type);
+            if (null !== $value) {
+                $normalized[$key] = $value;
+            }
+        }
+
+        return $normalized;
+    }
+
+    private function castToType(mixed $value, string $type): mixed
+    {
+        return match ($type) {
+            'string' => is_string($value) ? $value : null,
+            'int' => is_int($value) ? $value : null,
+            'bool' => is_bool($value) ? $value : null,
+            default => null,
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return array<Comment>
+     */
     public function getCommentReplies(Comment $comment, array $options = []): array
     {
-        return $this->commentRepository->findRepliesByParent($comment, $options);
+        $normalizedOptions = $this->normalizeQueryOptions($options, [
+            'status' => 'string',
+            'order_direction' => 'string',
+            'limit' => 'int',
+        ]);
+
+        /** @var array{status?: string, order_direction?: string, limit?: int} $normalizedOptions */
+        return $this->commentRepository->findRepliesByParent($comment, $normalizedOptions);
     }
 
     public function getCommentCount(string $targetType, string $targetId, string $status = 'approved'): int
@@ -207,21 +313,57 @@ class CommentService
         return $this->commentRepository->countByTarget($targetType, $targetId, $status);
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @return array<Comment>
+     */
     public function searchComments(string $keyword, array $options = []): array
     {
-        return $this->commentRepository->searchByContent($keyword, $options);
+        $normalizedOptions = $this->normalizeQueryOptions($options, [
+            'target_type' => 'string',
+            'status' => 'string',
+            'order_direction' => 'string',
+            'limit' => 'int',
+        ]);
+
+        /** @var array{target_type?: string, status?: string, order_direction?: string, limit?: int} $normalizedOptions */
+        return $this->commentRepository->searchByContent($keyword, $normalizedOptions);
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @return array<Comment>
+     */
     public function getPendingComments(array $options = []): array
     {
-        return $this->commentRepository->findPendingComments($options);
+        $normalizedOptions = $this->normalizeQueryOptions($options, [
+            'limit' => 'int',
+        ]);
+
+        /** @var array{limit?: int} $normalizedOptions */
+        return $this->commentRepository->findPendingComments($normalizedOptions);
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @return array<Comment>
+     */
     public function getCommentsByAuthor(string $authorId, array $options = []): array
     {
-        return $this->commentRepository->findByAuthor($authorId, $options);
+        $normalizedOptions = $this->normalizeQueryOptions($options, [
+            'status' => 'string',
+            'order_direction' => 'string',
+            'limit' => 'int',
+            'offset' => 'int',
+        ]);
+
+        /** @var array{status?: string, order_direction?: string, limit?: int, offset?: int} $normalizedOptions */
+        return $this->commentRepository->findByAuthor($authorId, $normalizedOptions);
     }
 
+    /**
+     * @return array<Comment>
+     */
     public function getCommentsByIp(string $ipAddress, ?\DateTimeInterface $since = null): array
     {
         return $this->commentRepository->findByIpAddress($ipAddress, $since);
@@ -232,16 +374,25 @@ class CommentService
         return $this->commentRepository->find($id);
     }
 
+    /**
+     * @return array<string, int|float>
+     */
     public function getStatistics(?string $targetType = null, ?string $targetId = null): array
     {
         return $this->commentRepository->getCommentStatistics($targetType, $targetId);
     }
 
+    /**
+     * @return array<Comment>
+     */
     public function getRecentComments(int $limit = 10, string $status = 'approved'): array
     {
         return $this->commentRepository->findRecentComments($limit, $status);
     }
 
+    /**
+     * @return array<Comment>
+     */
     public function getPopularComments(string $targetType, string $targetId, int $limit = 5): array
     {
         return $this->commentRepository->findPopularComments($targetType, $targetId, $limit);
@@ -254,11 +405,11 @@ class CommentService
 
     public function isAuthor(Comment $comment, ?string $authorId = null, ?string $authorIp = null): bool
     {
-        if ($authorId !== null && $comment->getAuthorId() === $authorId) {
+        if (null !== $authorId && $comment->getAuthorId() === $authorId) {
             return true;
         }
 
-        if ($authorId === null && $authorIp !== null && $comment->getAuthorIp() === $authorIp) {
+        if (null === $authorId && null !== $authorIp && $comment->getAuthorIp() === $authorIp) {
             return true;
         }
 

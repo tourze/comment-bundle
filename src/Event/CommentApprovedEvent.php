@@ -10,7 +10,7 @@ class CommentApprovedEvent extends Event
     public const NAME = 'comment.approved';
 
     public function __construct(
-        private readonly Comment $comment
+        private readonly Comment $comment,
     ) {
     }
 

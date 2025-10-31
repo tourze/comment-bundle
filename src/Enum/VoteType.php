@@ -12,7 +12,6 @@ enum VoteType: string implements Labelable, Itemable, Selectable
 {
     use ItemTrait;
     use SelectTrait;
-    
     case LIKE = 'like';
     case DISLIKE = 'dislike';
 
@@ -23,22 +22,37 @@ enum VoteType: string implements Labelable, Itemable, Selectable
             self::DISLIKE => '踩',
         };
     }
-    
-    /**
-     * @deprecated Use getLabel() instead
-     */
+
+    public function isPositive(): bool
+    {
+        return self::LIKE === $this;
+    }
+
+    public function isNegative(): bool
+    {
+        return self::DISLIKE === $this;
+    }
+
     public function label(): string
     {
         return $this->getLabel();
     }
 
-    public function isPositive(): bool
+    /**
+     * 获取所有枚举的选项数组（用于下拉列表等）
+     *
+     * @return array<int, array{value: string, label: string}>
+     */
+    public static function toSelectItems(): array
     {
-        return $this === self::LIKE;
-    }
+        $result = [];
+        foreach (self::cases() as $case) {
+            $result[] = [
+                'value' => $case->value,
+                'label' => $case->getLabel(),
+            ];
+        }
 
-    public function isNegative(): bool
-    {
-        return $this === self::DISLIKE;
+        return $result;
     }
 }

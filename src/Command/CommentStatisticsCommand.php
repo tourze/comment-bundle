@@ -17,9 +17,9 @@ use Tourze\CommentBundle\Service\CommentService;
 class CommentStatisticsCommand extends Command
 {
     public const NAME = 'comment:statistics';
-    
+
     public function __construct(
-        private readonly CommentService $commentService
+        private readonly CommentService $commentService,
     ) {
         parent::__construct();
     }
@@ -29,7 +29,8 @@ class CommentStatisticsCommand extends Command
         $this
             ->addOption('target-type', 't', InputOption::VALUE_REQUIRED, '目标类型')
             ->addOption('target-id', 'i', InputOption::VALUE_REQUIRED, '目标ID')
-            ->addOption('recent', 'r', InputOption::VALUE_OPTIONAL, '显示最近N条评论', 10);
+            ->addOption('recent', 'r', InputOption::VALUE_OPTIONAL, '显示最近N条评论', 10)
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -40,11 +41,12 @@ class CommentStatisticsCommand extends Command
         $targetId = $input->getOption('target-id');
 
         // 显示基本统计信息
-        $this->showBasicStats($io, $targetType, $targetId);
+        $this->showBasicStats($io, is_string($targetType) ? $targetType : null, is_string($targetId) ? $targetId : null);
 
         // 显示最近评论
         if (($recentCount = $input->getOption('recent')) !== null) {
-            $this->showRecentComments($io, (int) $recentCount);
+            $recentCountInt = is_numeric($recentCount) ? (int) $recentCount : 10;
+            $this->showRecentComments($io, $recentCountInt);
         }
 
         return Command::SUCCESS;
@@ -55,9 +57,9 @@ class CommentStatisticsCommand extends Command
         $stats = $this->commentService->getStatistics($targetType, $targetId);
 
         $title = '评论系统统计信息';
-        if ($targetType !== null && $targetId !== null) {
+        if (null !== $targetType && null !== $targetId) {
             $title .= " ({$targetType}:{$targetId})";
-        } elseif ($targetType !== null) {
+        } elseif (null !== $targetType) {
             $title .= " ({$targetType})";
         }
 
@@ -95,8 +97,9 @@ class CommentStatisticsCommand extends Command
     {
         $comments = $this->commentService->getRecentComments($limit);
 
-        if (empty($comments)) {
+        if ([] === $comments) {
             $io->info('暂无最近评论');
+
             return;
         }
 
@@ -109,9 +112,9 @@ class CommentStatisticsCommand extends Command
                 $comment->getTargetType(),
                 $comment->getTargetId(),
                 $comment->getAuthorName() ?? '匿名',
-                $comment->getStatus(),
+                $comment->getStatus()->value,
                 mb_substr($comment->getContent(), 0, 50) . '...',
-                $comment->getCreatedAt()->format('Y-m-d H:i:s')
+                $comment->getCreateTime()?->format('Y-m-d H:i:s') ?? 'N/A',
             ];
         }
 

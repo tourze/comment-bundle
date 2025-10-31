@@ -4,6 +4,7 @@ namespace Tourze\CommentBundle\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 use Tourze\CommentBundle\Repository\CommentMentionRepository;
 use Tourze\DoctrineIndexedBundle\Attribute\IndexColumn;
 use Tourze\DoctrineTimestampBundle\Traits\CreateTimeAware;
@@ -11,7 +12,6 @@ use Tourze\DoctrineTimestampBundle\Traits\CreateTimeAware;
 #[ORM\Entity(repositoryClass: CommentMentionRepository::class)]
 #[ORM\Table(name: 'comment_mention', options: ['comment' => '评论提及表'])]
 #[ORM\UniqueConstraint(name: 'unique_mention', columns: ['comment_id', 'mentioned_user_id'])]
-#[ORM\Index(name: 'comment_mention_idx_comment', columns: ['comment_id'])]
 class CommentMention implements \Stringable
 {
     use CreateTimeAware;
@@ -25,19 +25,25 @@ class CommentMention implements \Stringable
     #[ORM\JoinColumn(name: 'comment_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private Comment $comment;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 100)]
     #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 100, options: ['comment' => '被提及用户ID'])]
     private string $mentionedUserId;
 
+    #[Assert\Length(max: 100)]
     #[ORM\Column(type: Types::STRING, length: 100, nullable: true, options: ['comment' => '被提及用户名'])]
     private ?string $mentionedUserName = null;
 
+    #[Assert\Type(type: 'bool')]
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false, 'comment' => '是否已通知'])]
     private bool $notified = false;
 
+    #[Assert\Type(type: '\DateTimeImmutable')]
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '通知时间'])]
     private ?\DateTimeImmutable $notifyTime = null;
 
+    #[Assert\Type(type: 'bool')]
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true, 'comment' => '是否有效'])]
     private bool $valid = true;
 
@@ -51,10 +57,9 @@ class CommentMention implements \Stringable
         return $this->comment;
     }
 
-    public function setComment(Comment $comment): self
+    public function setComment(Comment $comment): void
     {
         $this->comment = $comment;
-        return $this;
     }
 
     public function getMentionedUserId(): string
@@ -62,10 +67,9 @@ class CommentMention implements \Stringable
         return $this->mentionedUserId;
     }
 
-    public function setMentionedUserId(string $mentionedUserId): self
+    public function setMentionedUserId(string $mentionedUserId): void
     {
         $this->mentionedUserId = $mentionedUserId;
-        return $this;
     }
 
     public function getMentionedUserName(): ?string
@@ -73,10 +77,9 @@ class CommentMention implements \Stringable
         return $this->mentionedUserName;
     }
 
-    public function setMentionedUserName(?string $mentionedUserName): self
+    public function setMentionedUserName(?string $mentionedUserName): void
     {
         $this->mentionedUserName = $mentionedUserName;
-        return $this;
     }
 
     public function isNotified(): bool
@@ -84,13 +87,12 @@ class CommentMention implements \Stringable
         return $this->notified;
     }
 
-    public function setNotified(bool $notified): self
+    public function setNotified(bool $notified): void
     {
         $this->notified = $notified;
-        if ($notified && $this->notifyTime === null) {
+        if ($notified && null === $this->notifyTime) {
             $this->notifyTime = new \DateTimeImmutable();
         }
-        return $this;
     }
 
     public function getNotifyTime(): ?\DateTimeImmutable
@@ -98,10 +100,9 @@ class CommentMention implements \Stringable
         return $this->notifyTime;
     }
 
-    public function setNotifyTime(?\DateTimeImmutable $notifyTime): self
+    public function setNotifyTime(?\DateTimeImmutable $notifyTime): void
     {
         $this->notifyTime = $notifyTime;
-        return $this;
     }
 
     public function isValid(): bool
@@ -109,10 +110,9 @@ class CommentMention implements \Stringable
         return $this->valid;
     }
 
-    public function setValid(bool $valid): self
+    public function setValid(bool $valid): void
     {
         $this->valid = $valid;
-        return $this;
     }
 
     public function __toString(): string

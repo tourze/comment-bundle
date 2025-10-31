@@ -8,22 +8,26 @@ class ContentFilterService
         '垃圾邮件', 'spam', '广告', '推广', '赚钱', '兼职',
         '色情', 'porn', '赌博', 'gambling', '博彩',
         '违法', '诈骗', '欺诈', 'scam', 'fraud',
-        '这是垃圾邮件', 'this is spam content', '快速赚钱的方法', 'easy money making opportunity'
+        '这是垃圾邮件', 'this is spam content', '快速赚钱的方法', 'easy money making opportunity',
     ];
 
     private const DEFAULT_PROFANITY_WORDS = [
         '操', '艹', '草', '妈的', '他妈', '傻逼', '煞笔',
         'fuck', 'shit', 'damn', 'bitch', 'asshole',
-        '你真是个傻逼', 'this is fucking terrible', '草你妈的', 'what a bitch'
+        '你真是个傻逼', 'this is fucking terrible', '草你妈的', 'what a bitch',
     ];
 
+    /**
+     * @param list<string> $customSpamWords
+     * @param list<string> $customProfanityWords
+     */
     public function __construct(
         private readonly array $customSpamWords = [],
         private readonly array $customProfanityWords = [],
         private readonly bool $enableSpamFilter = true,
         private readonly bool $enableProfanityFilter = true,
         private readonly int $maxLength = 5000,
-        private readonly int $minLength = 1
+        private readonly int $minLength = 1,
     ) {
     }
 
@@ -57,11 +61,12 @@ class ContentFilterService
     {
         // 替换多个空白字符为单个空格
         $content = preg_replace('/\s+/', ' ', $content);
+        if (null === $content) {
+            return '';
+        }
 
         // 移除行首行尾空格
-        $content = preg_replace('/^\s+|\s+$/m', '', $content);
-
-        return $content;
+        return preg_replace('/^\s+|\s+$/m', '', $content) ?? $content;
     }
 
     private function sanitizeHtml(string $content): string
@@ -70,11 +75,12 @@ class ContentFilterService
         $content = strip_tags($content);
 
         // 转义HTML特殊字符
-        $content = htmlspecialchars($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-        return $content;
+        return htmlspecialchars($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function analyzeContent(string $content): array
     {
         return [
@@ -87,58 +93,68 @@ class ContentFilterService
             'is_safe' => $this->isContentSafe($content),
             'filtered_reason' => $this->getFilteredReason($content),
             'link_count' => $this->countLinks($content),
-            'mention_count' => $this->countMentions($content)
+            'mention_count' => $this->countMentions($content),
         ];
     }
 
     private function isLengthValid(string $content): bool
     {
         $length = mb_strlen(trim($content));
+
         return $length >= $this->minLength && $length <= $this->maxLength;
     }
 
     private function containsSpam(string $content): bool
     {
         $spamWords = array_merge(self::DEFAULT_SPAM_WORDS, $this->customSpamWords);
+
         return $this->containsWords($content, $spamWords);
     }
 
+    /**
+     * @param list<string> $words
+     */
     private function containsWords(string $content, array $words): bool
     {
         $content = mb_strtolower($content);
-        
+
         foreach ($words as $word) {
-            if (mb_strpos($content, mb_strtolower($word)) !== false) {
+            if (false !== mb_strpos($content, mb_strtolower($word))) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
     private function containsProfanity(string $content): bool
     {
         $profanityWords = array_merge(self::DEFAULT_PROFANITY_WORDS, $this->customProfanityWords);
+
         return $this->containsWords($content, $profanityWords);
     }
 
     private function hasExcessiveRepetition(string $content): bool
     {
         // 检查连续重复字符（超过5个相同字符）
-        if (preg_match('/(.)\1{5,}/', $content)) {
+        $hasRepeated = preg_match('/(.)\1{5,}/', $content);
+        if (1 === $hasRepeated) {
             return true;
         }
 
         // 检查重复单词或短语
         $words = preg_split('/\s+/', $content);
+        if (false === $words) {
+            return false;
+        }
         $wordCount = array_count_values($words);
-        
+
         foreach ($wordCount as $count) {
             if ($count > 10) { // 同一个词重复超过10次
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -153,11 +169,11 @@ class ContentFilterService
         // 检查可疑域名
         $suspiciousDomains = [
             'bit.ly', 'tinyurl.com', 't.co', 'goo.gl',
-            'ow.ly', 'buff.ly', 'is.gd'
+            'ow.ly', 'buff.ly', 'is.gd',
         ];
 
         foreach ($suspiciousDomains as $domain) {
-            if (mb_strpos($content, $domain) !== false) {
+            if (false !== mb_strpos($content, $domain)) {
                 return true;
             }
         }
@@ -167,7 +183,9 @@ class ContentFilterService
 
     private function countLinks(string $content): int
     {
-        return preg_match_all('/https?:\/\/[^\s]+/', $content);
+        $count = preg_match_all('/https?:\/\/[^\s]+/', $content);
+
+        return false !== $count ? $count : 0;
     }
 
     public function isContentSafe(string $content): bool
@@ -227,6 +245,8 @@ class ContentFilterService
 
     private function countMentions(string $content): int
     {
-        return preg_match_all('/@[a-zA-Z0-9_]+/', $content);
+        $count = preg_match_all('/@[a-zA-Z0-9_]+/', $content);
+
+        return false !== $count ? $count : 0;
     }
 }

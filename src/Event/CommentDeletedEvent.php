@@ -10,7 +10,7 @@ class CommentDeletedEvent extends Event
     public const NAME = 'comment.deleted';
 
     public function __construct(
-        private readonly Comment $comment
+        private readonly Comment $comment,
     ) {
     }
 

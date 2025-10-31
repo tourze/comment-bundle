@@ -6,6 +6,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 use Tourze\CommentBundle\Enum\CommentStatus;
 use Tourze\CommentBundle\Repository\CommentRepository;
 use Tourze\DoctrineIndexedBundle\Attribute\IndexColumn;
@@ -16,7 +17,6 @@ use Tourze\DoctrineUserBundle\Attribute\CreatedByColumn;
 #[ORM\Entity(repositoryClass: CommentRepository::class)]
 #[ORM\Table(name: 'comment', options: ['comment' => '评论表'])]
 #[ORM\Index(name: 'comment_idx_target', columns: ['target_type', 'target_id'])]
-#[ORM\Index(name: 'comment_idx_parent', columns: ['parent_id'])]
 class Comment implements \Stringable
 {
     use TimestampableAware;
@@ -26,32 +26,44 @@ class Comment implements \Stringable
     #[ORM\Column(type: Types::INTEGER, options: ['comment' => '主键ID'])]
     private ?int $id = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 50)]
     #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 50, options: ['comment' => '目标类型'])]
     private string $targetType;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '目标ID'])]
     private string $targetId;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 10000)]
     #[ORM\Column(type: Types::TEXT, options: ['comment' => '评论内容'])]
     private string $content;
 
+    #[Assert\Length(max: 100)]
     #[CreatedByColumn]
     #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 100, nullable: true, options: ['comment' => '作者ID'])]
     private ?string $authorId = null;
 
+    #[Assert\Length(max: 100)]
     #[ORM\Column(type: Types::STRING, length: 100, nullable: true, options: ['comment' => '作者姓名'])]
     private ?string $authorName = null;
 
+    #[Assert\Email]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => '作者邮箱'])]
     private ?string $authorEmail = null;
 
+    #[Assert\Length(max: 45)]
     #[CreateIpColumn]
     #[ORM\Column(type: Types::STRING, length: 45, nullable: true, options: ['comment' => '作者IP地址'])]
     private ?string $authorIp = null;
 
+    #[Assert\Length(max: 255)]
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => '用户代理'])]
     private ?string $userAgent = null;
 
@@ -59,28 +71,36 @@ class Comment implements \Stringable
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private ?Comment $parent = null;
 
+    /** @var Collection<int, Comment> */
     #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class, cascade: ['remove'], fetch: 'EXTRA_LAZY')]
     private Collection $replies;
 
+    #[Assert\Choice(callback: [CommentStatus::class, 'cases'])]
     #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 20, enumType: CommentStatus::class, options: ['default' => 'pending', 'comment' => '评论状态'])]
     private CommentStatus $status = CommentStatus::PENDING;
 
+    #[Assert\PositiveOrZero]
     #[ORM\Column(type: Types::INTEGER, options: ['default' => 0, 'comment' => '点赞数'])]
     private int $likesCount = 0;
 
+    #[Assert\PositiveOrZero]
     #[ORM\Column(type: Types::INTEGER, options: ['default' => 0, 'comment' => '踩数'])]
     private int $dislikesCount = 0;
 
+    #[Assert\Type(type: 'bool')]
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false, 'comment' => '是否置顶'])]
     private bool $pinned = false;
 
+    #[Assert\Type(type: '\DateTimeImmutable')]
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '删除时间'])]
     private ?\DateTimeImmutable $deleteTime = null;
 
+    #[Assert\Type(type: 'bool')]
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true, 'comment' => '是否有效'])]
     private bool $valid = true;
 
+    /** @var Collection<int, CommentVote> */
     #[ORM\OneToMany(mappedBy: 'comment', targetEntity: CommentVote::class, cascade: ['remove'], fetch: 'EXTRA_LAZY')]
     private Collection $votes;
 
@@ -100,10 +120,9 @@ class Comment implements \Stringable
         return $this->targetType;
     }
 
-    public function setTargetType(string $targetType): self
+    public function setTargetType(string $targetType): void
     {
         $this->targetType = $targetType;
-        return $this;
     }
 
     public function getTargetId(): string
@@ -111,10 +130,9 @@ class Comment implements \Stringable
         return $this->targetId;
     }
 
-    public function setTargetId(string $targetId): self
+    public function setTargetId(string $targetId): void
     {
         $this->targetId = $targetId;
-        return $this;
     }
 
     public function getContent(): string
@@ -122,10 +140,9 @@ class Comment implements \Stringable
         return $this->content;
     }
 
-    public function setContent(string $content): self
+    public function setContent(string $content): void
     {
         $this->content = $content;
-        return $this;
     }
 
     public function getAuthorId(): ?string
@@ -133,10 +150,9 @@ class Comment implements \Stringable
         return $this->authorId;
     }
 
-    public function setAuthorId(?string $authorId): self
+    public function setAuthorId(?string $authorId): void
     {
         $this->authorId = $authorId;
-        return $this;
     }
 
     public function getAuthorName(): ?string
@@ -144,10 +160,9 @@ class Comment implements \Stringable
         return $this->authorName;
     }
 
-    public function setAuthorName(?string $authorName): self
+    public function setAuthorName(?string $authorName): void
     {
         $this->authorName = $authorName;
-        return $this;
     }
 
     public function getAuthorEmail(): ?string
@@ -155,10 +170,9 @@ class Comment implements \Stringable
         return $this->authorEmail;
     }
 
-    public function setAuthorEmail(?string $authorEmail): self
+    public function setAuthorEmail(?string $authorEmail): void
     {
         $this->authorEmail = $authorEmail;
-        return $this;
     }
 
     public function getAuthorIp(): ?string
@@ -166,10 +180,9 @@ class Comment implements \Stringable
         return $this->authorIp;
     }
 
-    public function setAuthorIp(?string $authorIp): self
+    public function setAuthorIp(?string $authorIp): void
     {
         $this->authorIp = $authorIp;
-        return $this;
     }
 
     public function getUserAgent(): ?string
@@ -177,12 +190,14 @@ class Comment implements \Stringable
         return $this->userAgent;
     }
 
-    public function setUserAgent(?string $userAgent): self
+    public function setUserAgent(?string $userAgent): void
     {
         $this->userAgent = $userAgent;
-        return $this;
     }
 
+    /**
+     * @return Collection<int, Comment>
+     */
     public function getReplies(): Collection
     {
         return $this->replies;
@@ -194,6 +209,7 @@ class Comment implements \Stringable
             $this->replies->add($reply);
             $reply->setParent($this);
         }
+
         return $this;
     }
 
@@ -204,6 +220,7 @@ class Comment implements \Stringable
                 $reply->setParent(null);
             }
         }
+
         return $this;
     }
 
@@ -212,10 +229,9 @@ class Comment implements \Stringable
         return $this->parent;
     }
 
-    public function setParent(?Comment $parent): self
+    public function setParent(?Comment $parent): void
     {
         $this->parent = $parent;
-        return $this;
     }
 
     public function getStatus(): CommentStatus
@@ -223,10 +239,9 @@ class Comment implements \Stringable
         return $this->status;
     }
 
-    public function setStatus(CommentStatus $status): self
+    public function setStatus(CommentStatus $status): void
     {
         $this->status = $status;
-        return $this;
     }
 
     public function getLikesCount(): int
@@ -234,10 +249,9 @@ class Comment implements \Stringable
         return $this->likesCount;
     }
 
-    public function setLikesCount(int $likesCount): self
+    public function setLikesCount(int $likesCount): void
     {
         $this->likesCount = $likesCount;
-        return $this;
     }
 
     public function getDislikesCount(): int
@@ -245,10 +259,9 @@ class Comment implements \Stringable
         return $this->dislikesCount;
     }
 
-    public function setDislikesCount(int $dislikesCount): self
+    public function setDislikesCount(int $dislikesCount): void
     {
         $this->dislikesCount = $dislikesCount;
-        return $this;
     }
 
     public function isPinned(): bool
@@ -256,10 +269,9 @@ class Comment implements \Stringable
         return $this->pinned;
     }
 
-    public function setPinned(bool $pinned): self
+    public function setPinned(bool $pinned): void
     {
         $this->pinned = $pinned;
-        return $this;
     }
 
     public function getDeleteTime(): ?\DateTimeImmutable
@@ -267,10 +279,9 @@ class Comment implements \Stringable
         return $this->deleteTime;
     }
 
-    public function setDeleteTime(?\DateTimeImmutable $deleteTime): self
+    public function setDeleteTime(?\DateTimeImmutable $deleteTime): void
     {
         $this->deleteTime = $deleteTime;
-        return $this;
     }
 
     public function isValid(): bool
@@ -278,12 +289,14 @@ class Comment implements \Stringable
         return $this->valid;
     }
 
-    public function setValid(bool $valid): self
+    public function setValid(bool $valid): void
     {
         $this->valid = $valid;
-        return $this;
     }
 
+    /**
+     * @return Collection<int, CommentVote>
+     */
     public function getVotes(): Collection
     {
         return $this->votes;
@@ -295,48 +308,51 @@ class Comment implements \Stringable
             $this->votes->add($vote);
             $vote->setComment($this);
         }
+
         return $this;
     }
 
     public function removeVote(CommentVote $vote): self
     {
         $this->votes->removeElement($vote);
+
         return $this;
     }
 
     public function isAnonymous(): bool
     {
-        return $this->authorId === null;
+        return null === $this->authorId;
     }
 
     public function isApproved(): bool
     {
-        return $this->status === CommentStatus::APPROVED;
+        return CommentStatus::APPROVED === $this->status;
     }
 
     public function isPending(): bool
     {
-        return $this->status === CommentStatus::PENDING;
+        return CommentStatus::PENDING === $this->status;
     }
 
     public function isRejected(): bool
     {
-        return $this->status === CommentStatus::REJECTED;
+        return CommentStatus::REJECTED === $this->status;
     }
 
     public function isDeleted(): bool
     {
-        return $this->deleteTime !== null || $this->status === CommentStatus::DELETED;
+        return null !== $this->deleteTime || CommentStatus::DELETED === $this->status;
     }
 
     public function getDepth(): int
     {
         $depth = 0;
         $parent = $this->parent;
-        while ($parent !== null) {
-            $depth++;
+        while (null !== $parent) {
+            ++$depth;
             $parent = $parent->getParent();
         }
+
         return $depth;
     }
 

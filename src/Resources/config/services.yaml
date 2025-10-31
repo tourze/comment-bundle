@@ -3,6 +3,7 @@ services:
   _defaults:
     autowire: true      # Automatically injects dependencies in your services.
     autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+    public: true       # Make services public for testing
 
   # Repository services
   Tourze\CommentBundle\Repository\:
@@ -19,3 +20,7 @@ services:
   # Commands
   Tourze\CommentBundle\Command\:
     resource: '../../Command/'
+
+  # Controllers (EasyAdmin)
+  Tourze\CommentBundle\Controller\:
+    resource: '../../Controller/'

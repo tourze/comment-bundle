@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Tourze\CommentBundle\Entity\Comment;
 use Tourze\CommentBundle\Service\CommentService;
 
 #[AsCommand(
@@ -17,9 +18,9 @@ use Tourze\CommentBundle\Service\CommentService;
 class CommentModerationCommand extends Command
 {
     public const NAME = 'comment:moderation';
-    
+
     public function __construct(
-        private readonly CommentService $commentService
+        private readonly CommentService $commentService,
     ) {
         parent::__construct();
     }
@@ -31,30 +32,47 @@ class CommentModerationCommand extends Command
             ->addOption('approve', 'a', InputOption::VALUE_REQUIRED, '批准指定ID的评论')
             ->addOption('reject', 'r', InputOption::VALUE_REQUIRED, '拒绝指定ID的评论')
             ->addOption('auto-approve', null, InputOption::VALUE_NONE, '自动批准所有安全的评论')
-            ->addOption('limit', null, InputOption::VALUE_REQUIRED, '限制显示数量', 50);
+            ->addOption('limit', null, InputOption::VALUE_REQUIRED, '限制显示数量', 50)
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
 
-        if ($input->getOption('list') !== null) {
-            return $this->listPendingComments($io, (int) $input->getOption('limit'));
+        if (null !== $input->getOption('list')) {
+            $limit = $input->getOption('limit');
+            $limitInt = is_numeric($limit) ? (int) $limit : 50;
+
+            return $this->listPendingComments($io, $limitInt);
         }
 
         if (($approveId = $input->getOption('approve')) !== null) {
+            if (!is_numeric($approveId)) {
+                $io->error('评论ID必须是数字');
+
+                return Command::FAILURE;
+            }
+
             return $this->approveComment($io, (int) $approveId);
         }
 
         if (($rejectId = $input->getOption('reject')) !== null) {
+            if (!is_numeric($rejectId)) {
+                $io->error('评论ID必须是数字');
+
+                return Command::FAILURE;
+            }
+
             return $this->rejectComment($io, (int) $rejectId);
         }
 
-        if ($input->getOption('auto-approve') !== null) {
+        if (null !== $input->getOption('auto-approve')) {
             return $this->autoApproveComments($io);
         }
 
         $io->info('使用 --help 查看可用选项');
+
         return Command::SUCCESS;
     }
 
@@ -62,8 +80,9 @@ class CommentModerationCommand extends Command
     {
         $comments = $this->commentService->getPendingComments(['limit' => $limit]);
 
-        if (empty($comments)) {
+        if ([] === $comments) {
             $io->success('没有待审核的评论');
+
             return Command::SUCCESS;
         }
 
@@ -75,7 +94,7 @@ class CommentModerationCommand extends Command
                 $comment->getTargetId(),
                 $comment->getAuthorName() ?? '匿名',
                 mb_substr($comment->getContent(), 0, 50) . '...',
-                $comment->getCreatedAt()->format('Y-m-d H:i:s')
+                $comment->getCreateTime()?->format('Y-m-d H:i:s') ?? 'N/A',
             ];
         }
 
@@ -91,16 +110,19 @@ class CommentModerationCommand extends Command
     {
         try {
             $comment = $this->commentService->getCommentById($commentId);
-            if ($comment === null) {
+            if (null === $comment) {
                 $io->error("评论 ID {$commentId} 不存在");
+
                 return Command::FAILURE;
             }
 
             $this->commentService->approveComment($comment);
             $io->success("评论 ID {$commentId} 已批准");
+
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $io->error("批准评论失败: " . $e->getMessage());
+            $io->error('批准评论失败: ' . $e->getMessage());
+
             return Command::FAILURE;
         }
     }
@@ -109,16 +131,19 @@ class CommentModerationCommand extends Command
     {
         try {
             $comment = $this->commentService->getCommentById($commentId);
-            if ($comment === null) {
+            if (null === $comment) {
                 $io->error("评论 ID {$commentId} 不存在");
+
                 return Command::FAILURE;
             }
 
             $this->commentService->rejectComment($comment);
             $io->success("评论 ID {$commentId} 已拒绝");
+
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $io->error("拒绝评论失败: " . $e->getMessage());
+            $io->error('拒绝评论失败: ' . $e->getMessage());
+
             return Command::FAILURE;
         }
     }
@@ -133,20 +158,21 @@ class CommentModerationCommand extends Command
             // 例如检查内容安全性、作者信誉等
             if ($this->shouldAutoApprove($comment)) {
                 $this->commentService->approveComment($comment);
-                $approvedCount++;
+                ++$approvedCount;
             }
         }
 
         $io->success("自动批准了 {$approvedCount} 条评论");
+
         return Command::SUCCESS;
     }
 
-    private function shouldAutoApprove($comment): bool
+    private function shouldAutoApprove(Comment $comment): bool
     {
         // 简单的自动批准逻辑
         // 可以根据实际需求扩展
-        return !$comment->isAnonymous() && 
-               mb_strlen($comment->getContent()) > 10 && 
-               mb_strlen($comment->getContent()) < 1000;
+        return !$comment->isAnonymous()
+               && mb_strlen($comment->getContent()) > 10
+               && mb_strlen($comment->getContent()) < 1000;
     }
 }

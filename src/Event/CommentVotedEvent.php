@@ -14,7 +14,7 @@ class CommentVotedEvent extends Event
         private readonly Comment $comment,
         private readonly VoteType $voteType,
         private readonly string $action,
-        private readonly ?string $voterId = null
+        private readonly ?string $voterId = null,
     ) {
     }
 

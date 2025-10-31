@@ -4,6 +4,7 @@ namespace Tourze\CommentBundle\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 use Tourze\CommentBundle\Enum\VoteType;
 use Tourze\CommentBundle\Repository\CommentVoteRepository;
 use Tourze\DoctrineIndexedBundle\Attribute\IndexColumn;
@@ -14,7 +15,6 @@ use Tourze\DoctrineUserBundle\Attribute\CreatedByColumn;
 #[ORM\Entity(repositoryClass: CommentVoteRepository::class)]
 #[ORM\Table(name: 'comment_vote', options: ['comment' => '评论投票表'])]
 #[ORM\UniqueConstraint(name: 'unique_vote', columns: ['comment_id', 'voter_id', 'voter_ip'])]
-#[ORM\Index(name: 'comment_vote_idx_comment', columns: ['comment_id'])]
 class CommentVote implements \Stringable
 {
     use CreateTimeAware;
@@ -28,18 +28,22 @@ class CommentVote implements \Stringable
     #[ORM\JoinColumn(name: 'comment_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private Comment $comment;
 
+    #[Assert\Length(max: 100)]
     #[CreatedByColumn]
     #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 100, nullable: true, options: ['comment' => '投票者ID'])]
     private ?string $voterId = null;
 
+    #[Assert\Length(max: 45)]
     #[CreateIpColumn]
     #[ORM\Column(type: Types::STRING, length: 45, nullable: true, options: ['comment' => '投票者IP地址'])]
     private ?string $voterIp = null;
 
+    #[Assert\Choice(callback: [VoteType::class, 'cases'])]
     #[ORM\Column(type: Types::STRING, length: 10, enumType: VoteType::class, options: ['comment' => '投票类型'])]
     private VoteType $voteType;
 
+    #[Assert\Type(type: 'bool')]
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true, 'comment' => '是否有效'])]
     private bool $valid = true;
 
@@ -48,10 +52,9 @@ class CommentVote implements \Stringable
         return $this->comment;
     }
 
-    public function setComment(Comment $comment): self
+    public function setComment(Comment $comment): void
     {
         $this->comment = $comment;
-        return $this;
     }
 
     public function getVoterId(): ?string
@@ -59,10 +62,9 @@ class CommentVote implements \Stringable
         return $this->voterId;
     }
 
-    public function setVoterId(?string $voterId): self
+    public function setVoterId(?string $voterId): void
     {
         $this->voterId = $voterId;
-        return $this;
     }
 
     public function getVoterIp(): ?string
@@ -70,10 +72,9 @@ class CommentVote implements \Stringable
         return $this->voterIp;
     }
 
-    public function setVoterIp(?string $voterIp): self
+    public function setVoterIp(?string $voterIp): void
     {
         $this->voterIp = $voterIp;
-        return $this;
     }
 
     public function getVoteType(): VoteType
@@ -81,10 +82,9 @@ class CommentVote implements \Stringable
         return $this->voteType;
     }
 
-    public function setVoteType(VoteType $voteType): self
+    public function setVoteType(VoteType $voteType): void
     {
         $this->voteType = $voteType;
-        return $this;
     }
 
     public function isValid(): bool
@@ -92,25 +92,24 @@ class CommentVote implements \Stringable
         return $this->valid;
     }
 
-    public function setValid(bool $valid): self
+    public function setValid(bool $valid): void
     {
         $this->valid = $valid;
-        return $this;
     }
 
     public function isLike(): bool
     {
-        return $this->voteType === VoteType::LIKE;
+        return VoteType::LIKE === $this->voteType;
     }
 
     public function isDislike(): bool
     {
-        return $this->voteType === VoteType::DISLIKE;
+        return VoteType::DISLIKE === $this->voteType;
     }
 
     public function isAnonymous(): bool
     {
-        return $this->voterId === null;
+        return null === $this->voterId;
     }
 
     public function __toString(): string

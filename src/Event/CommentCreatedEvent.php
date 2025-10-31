@@ -10,7 +10,7 @@ class CommentCreatedEvent extends Event
     public const NAME = 'comment.created';
 
     public function __construct(
-        private readonly Comment $comment
+        private readonly Comment $comment,
     ) {
     }
 
