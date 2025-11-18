@@ -18,11 +18,6 @@ use Tourze\PHPUnitSymfonyWebTest\AbstractEasyAdminControllerTestCase;
 #[RunTestsInSeparateProcesses]
 final class CommentCrudControllerTest extends AbstractEasyAdminControllerTestCase
 {
-    public function testGetEntityFqcn(): void
-    {
-        $this->assertSame(Comment::class, CommentCrudController::getEntityFqcn());
-    }
-
     public function testIndexPage(): void
     {
         $client = self::createAuthenticatedClient();

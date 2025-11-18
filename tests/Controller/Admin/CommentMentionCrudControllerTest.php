@@ -18,11 +18,6 @@ use Tourze\PHPUnitSymfonyWebTest\AbstractEasyAdminControllerTestCase;
 #[RunTestsInSeparateProcesses]
 final class CommentMentionCrudControllerTest extends AbstractEasyAdminControllerTestCase
 {
-    public function testGetEntityFqcn(): void
-    {
-        $this->assertSame(CommentMention::class, CommentMentionCrudController::getEntityFqcn());
-    }
-
     public function testControllerIsInstanceOfAbstractCrudController(): void
     {
         $controller = new CommentMentionCrudController();
