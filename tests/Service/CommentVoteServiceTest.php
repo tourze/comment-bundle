@@ -148,7 +148,7 @@ final class CommentVoteServiceTest extends TestCase
         $comment = new Comment();
         $this->expectException(\TypeError::class);
 
-        /* @phpstan-ignore-next-line */
+        
         $this->voteService->vote($comment, 'invalid_type', 'user123');
     }
 

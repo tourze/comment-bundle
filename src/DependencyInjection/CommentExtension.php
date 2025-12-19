@@ -4,7 +4,7 @@ namespace Tourze\CommentBundle\DependencyInjection;
 
 use Tourze\SymfonyDependencyServiceLoader\AutoExtension;
 
-class CommentExtension extends AutoExtension
+final class CommentExtension extends AutoExtension
 {
     protected function getConfigDir(): string
     {

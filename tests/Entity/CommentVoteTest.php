@@ -73,7 +73,7 @@ final class CommentVoteTest extends AbstractEntityTestCase
 
         $this->expectException(\TypeError::class);
 
-        /* @phpstan-ignore-next-line */
+        
         $vote->setVoteType('invalid_type');
     }
 
@@ -221,7 +221,7 @@ final class CommentVoteTest extends AbstractEntityTestCase
 
         // 测试空字符串
         $this->expectException(\TypeError::class);
-        /* @phpstan-ignore-next-line */
+        
         $vote->setVoteType('');
     }
 
@@ -231,7 +231,7 @@ final class CommentVoteTest extends AbstractEntityTestCase
 
         // 测试大小写敏感
         $this->expectException(\TypeError::class);
-        /* @phpstan-ignore-next-line */
+        
         $vote->setVoteType('LIKE');
     }
 
@@ -243,7 +243,7 @@ final class CommentVoteTest extends AbstractEntityTestCase
 
         foreach ($invalidTypes as $invalidType) {
             try {
-                /* @phpstan-ignore-next-line */
+                
                 $vote->setVoteType($invalidType);
                 self::fail("Expected exception for invalid vote type: {$invalidType}");
             } catch (\TypeError $e) {
